@@ -1,0 +1,325 @@
+/* =============================================================================
+   variables.css — Fonte única de verdade para toda a linguagem visual.
+   -----------------------------------------------------------------------------
+   Nada neste projeto deve conter um valor cromático, tipográfico ou temporal
+   escrito à mão. Tudo vem daqui. O JavaScript também lê daqui (ver
+   scripts/ui/atmosphere.js e scripts/particles/renderer.js) através de
+   getComputedStyle, para que o desenho no canvas e o desenho em DOM nunca
+   possam divergir.
+
+   Paleta estritamente monocromática por decisão de projeto. Os tokens de
+   acento existem já reservados (--accent-*) e estão neste momento afinados em
+   tons de tinta; trocar os seus valores por pastéis é uma edição de três
+   linhas e não obriga a tocar em mais nenhum ficheiro.
+   ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------------
+     SUPERFÍCIE (papel)
+     O fundo é sempre claro. A hora do dia não escurece nada: apenas desloca
+     o branco na direção de um creme pastel ao meio-dia. A mistura é feita em
+     oklab para que a transição não passe por cinzentos sujos.
+     --warmth é escrito pelo JS em cada minuto, no intervalo [0, 1].
+     --------------------------------------------------------------------- */
+  --warmth: 0;
+
+  --paper-neutral: #fcfcfb;   /* madrugada e noite: branco de papel, levemente frio */
+  --paper-noon:    #f8f1e0;   /* meio-dia: creme pastel, sol a entrar pela janela */
+
+  /* Os valores aqui são os de recurso, para motores sem color-mix; o bloco
+     @supports no fim do ficheiro substitui-os pela mistura verdadeira.
+
+     A tentação é declarar duas vezes a mesma propriedade e contar com a
+     cascata, como se faz com px e dvh. Com variáveis não resulta: a segunda
+     declaração é válida na análise, ganha, e só mais tarde — no cálculo do
+     valor — é que o motor descobre que não percebe color-mix. Nessa altura a
+     declaração não cai para a anterior, cai para "unset", e desaparece o
+     papel, o véu e o fio de todos os botões. A decisão tem de ser tomada
+     onde o @supports a pode tomar. */
+  --paper: var(--paper-neutral);
+
+  /* Véu radial que dá volume ao papel e impede que o branco leia como vazio. */
+  --paper-vignette: #f6f6f4;
+
+  /* ---------------------------------------------------------------------
+     TINTA
+     Nunca preto absoluto: #0e0e0e lê como tinta sobre papel, #000 lê como
+     buraco no ecrã.
+     --------------------------------------------------------------------- */
+  --ink:        #0e0e0e;
+  --ink-strong: #000000;
+  --ink-soft:   #3a3a38;
+  --ink-muted:  #76756f;
+  --ink-faint:  #b9b8b2;
+
+  /* -------------------------------------------------------------------
+     ESCALA SEMÂNTICA DE TINTA
+
+     É por aqui que uma paleta pastel entra um dia: TODO o texto secundário
+     do site passa por estes quatro tokens, e não pelos tons de tinta
+     diretamente. Mudar estas quatro linhas repinta o site inteiro sem tocar
+     em mais nada.
+
+     Hoje são tinta, porque a paleta é monocromática por decisão. A promessa
+     só é verdadeira porque os consumidores estão mesmo ligados aqui — um
+     token de acento que ninguém consome não prepara nada, só parece.
+     ------------------------------------------------------------------- */
+  --accent-1: var(--ink-soft);   /* texto secundário: notas, versos da antologia */
+  --accent-2: var(--ink-muted);  /* texto terciário: anos, legendas, botões em repouso */
+  --accent-3: var(--ink-faint);  /* metadados: fontes, rótulos, assinatura do poema */
+
+  /* ---------------------------------------------------------------------
+     TIPOGRAFIA
+     --------------------------------------------------------------------- */
+  --font-serif: "EB Garamond", "Iowan Old Style", Georgia, "Times New Roman", serif;
+
+  /* Um só peso. O EB Garamond em 500 chegou a estar aqui e a ser pedido à
+     Google Fonts; como nada o usava, era um ficheiro a descarregar para não
+     ser desenhado. Se um dia for preciso — a recomendação clássica é subir
+     para 500 nos corpos pequenos, onde o anti-aliasing come contraste às
+     hastes finas desta serifa — acrescenta-se aqui E no pedido da fonte, no
+     index.html. As duas coisas, ou não serve de nada. */
+  --weight-regular: 400;
+
+  /* Escala fluida: clamp(min, preferido, max). O preferido usa vw para que o
+     texto respire em ecrãs grandes sem nunca rebentar em telemóvel. */
+  --size-xs:   clamp(0.72rem, 0.68rem + 0.18vw, 0.82rem);
+  --size-sm:   clamp(0.84rem, 0.79rem + 0.24vw, 0.98rem);
+  --size-base: clamp(1rem,    0.94rem + 0.3vw,  1.15rem);
+  --size-md:   clamp(1.18rem, 1.08rem + 0.5vw,  1.45rem);
+  --size-lg:   clamp(1.6rem,  1.32rem + 1.4vw,  2.6rem);
+  --size-xl:   clamp(2.2rem,  1.6rem + 3vw,     4.6rem);
+
+  /* A saudação de entrada. Deliberadamente modesta: é a primeira coisa que se
+     vê e não é o assunto da página. A versão anterior usava um corpo heróico
+     de até 6.4rem e lia-se como um cartaz. */
+  --intro-size: clamp(1.75rem, 1.2rem + 2.2vw, 3.1rem);
+
+  --leading-tight: 1.1;
+  --leading-snug:  1.3;
+  --leading-base:  1.55;
+  --leading-loose: 1.85;
+
+  --tracking-tight:  -0.015em;
+  --tracking-base:    0em;
+  --tracking-wide:    0.08em;
+  --tracking-widest:  0.22em;
+
+  /* ---------------------------------------------------------------------
+     ESPAÇAMENTO — escala de quarta maior, em rem
+     --------------------------------------------------------------------- */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs:  0.75rem;
+  --space-sm:  1rem;
+  --space-md:  1.5rem;
+  --space-lg:  2.25rem;
+  --space-xl:  3.5rem;
+  --space-2xl: 5.5rem;
+
+  /* Largura do painel do poeta. É um token porque duas peças precisam dela:
+     o próprio painel e a moldura do poema, que em ecrãs largos se afasta
+     para lhe dar lugar. */
+  --poet-panel-width: min(26rem, 72vw);
+
+  /* Margem viva da página. Respeita o notch do iPhone via env(). */
+  --gutter: clamp(1.25rem, 1rem + 3vw, 5rem);
+  --gutter-left: calc(var(--gutter) + env(safe-area-inset-left, 0px));
+  --gutter-right: calc(var(--gutter) + env(safe-area-inset-right, 0px));
+  --gutter-top: calc(var(--gutter) + env(safe-area-inset-top, 0px));
+  --gutter-bottom: calc(var(--gutter) + env(safe-area-inset-bottom, 0px));
+
+  /* ---------------------------------------------------------------------
+     TEMPO
+     Durações nomeadas pela intenção, não pelo número.
+     --------------------------------------------------------------------- */
+  --dur-quick:   240ms;
+  --dur-calm:    520ms;
+  --dur-slow:    900ms;
+  --dur-breath:  1600ms;
+
+  /* Tempos da encenação de entrada, lidos pelo JS. */
+  --intro-hold:    1700ms;  /* quanto tempo a saudação fica inteira, no mínimo */
+  --intro-fade:    1150ms;  /* a saída completa, da primeira letra à última */
+  --intro-reveal:  1400ms;  /* a névoa a levantar, revelando a página */
+
+  /* O escalonamento das letras. Com onze letras, 48ms de atraso dão 480ms
+     entre a primeira e a última, e cada uma leva 620ms a aparecer ou a sair:
+     a frase inteira demora cerca de 1.1 s, e em nenhum momento parece um
+     bloco a ligar-se. Subir o atraso faz a frase ler-se como máquina de
+     escrever; baixá-lo apaga o efeito. */
+  --intro-stagger: 48ms;
+  --intro-letter:  620ms;
+
+  /* Curvas. --ease-exit é assimétrica de propósito: sai depressa, chega devagar. */
+  --ease-standard: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-enter:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit:     cubic-bezier(0.55, 0, 0.35, 1);
+
+  /* ---------------------------------------------------------------------
+     OPACIDADES
+     --------------------------------------------------------------------- */
+  /* Dois degraus, porque são dois os que o site usa. Uma escala de sete
+     níveis em que cinco nunca são pedidos não é um sistema preparado para
+     crescer — é código morto com boa apresentação. As opacidades que variam
+     a sério estão onde pertencem: nos planos de profundidade, mais abaixo. */
+  --o-full: 1;
+  --o-none: 0;
+
+  /* ---------------------------------------------------------------------
+     TRAÇOS E CONTORNOS
+     Os botões não têm preenchimento: são apenas um fio de tinta.
+     --------------------------------------------------------------------- */
+  --hairline: 1px;
+  --stroke-color: #c4c4c1;
+  --stroke-color-hover: #2b2b2b;
+  --stroke-color-active: var(--ink);
+  --focus-ring: 2px;
+  --focus-color: var(--ink);
+
+  --radius-none: 0;
+
+  /* ---------------------------------------------------------------------
+     CAMADAS DE PROFUNDIDADE DAS PARTÍCULAS
+     Quatro planos. O plano 1 está longe (pequeno, pálido, quase imóvel ao
+     cursor); o plano 4 está à frente do nariz (grande, escuro, foge do rato).
+     Lido uma única vez pelo renderer para construir o atlas de glifos — ver
+     scripts/particles/atlas.js. Mexer aqui muda o desenho, não é decorativo.
+     --------------------------------------------------------------------- */
+  --glyph-color: var(--ink);
+
+  /* Os três valores de cada plano não são independentes: saem todos de um
+     modelo de câmara. Para uma câmara que se desloca, o desvio aparente de um
+     objeto é proporcional à sua escala no ecrã — logo o ganho de paralaxe de
+     cada plano é o seu corpo de letra a dividir pelo corpo de referência (16).
+     A opacidade segue a perspetiva aérea, α ∝ corpo^1.4 normalizado: o que
+     está longe é mais pálido porque há mais ar pelo meio.
+
+     Escolher estes números à mão, cada um "bonito" por si, desfaz o efeito: o
+     cérebro deteta a incoerência entre tamanho e velocidade e as camadas
+     passam a ler-se como três animações sobrepostas em vez de um espaço. */
+  --layer-1-size: 9px;
+  --layer-1-opacity: 0.17;
+  --layer-1-parallax: 0.56;
+
+  --layer-2-size: 12px;
+  --layer-2-opacity: 0.42;
+  --layer-2-parallax: 0.75;
+
+  --layer-3-size: 16px;
+  --layer-3-opacity: 0.63;
+  --layer-3-parallax: 1;
+
+  --layer-4-size: 22px;
+  --layer-4-opacity: 0.95;
+  --layer-4-parallax: 1.38;
+
+  /* ---------------------------------------------------------------------
+     PLANO DAS PALAVRAS
+     As palavras que se formam no campo têm corpo próprio, maior do que
+     qualquer plano de profundidade. Não é capricho: formadas no corpo do
+     plano da frente, perdiam-se entre as mil letras à volta — via-se letras a
+     mexer, não uma palavra a formar-se. Um corpo que nenhuma outra letra tem
+     é o que faz o acontecimento ler-se como acontecimento.
+     --------------------------------------------------------------------- */
+  --word-size: 30px;
+  --word-opacity: 1;
+
+  /* ---------------------------------------------------------------------
+     PLANO DE LEITURA
+     O plano em que os poemas são compostos. Ao contrário dos quatro acima,
+     o corpo não é fixo: é calculado no arranque, o maior que faça caber o
+     verso mais longo de toda a obra reunida dentro da moldura. O que aqui
+     se declara são os limites dentro dos quais esse cálculo pode andar, e
+     a métrica da mancha de texto.
+     --------------------------------------------------------------------- */
+  /* O mínimo não desce abaixo de 14 px: a serifa do EB Garamond é fina, o
+     anti-aliasing come-lhe contraste nas bordas, e abaixo disto o poema deixa
+     de cumprir o critério de contraste das WCAG mesmo com a tinta a 95%.
+     Quando um poema é longo de mais para caber, a resposta é uma segunda
+     coluna — nunca encolher a letra. */
+  --reading-min-size: 14px;
+  --reading-max-size: 21px;
+
+  /* O corpo a partir do qual um poema se lê sem esforço. É este número que
+     decide quando abrir uma segunda coluna: enquanto UMA coluna der um corpo
+     igual ou maior do que isto, fica numa coluna. Só quando nem isso chega é
+     que o poema se parte — e aí parte-se entre estrofes. */
+  --reading-comfort: 16px;
+  --reading-line-height: 1.95;  /* múltiplos do corpo */
+  --reading-tracking: 0.015;    /* em em */
+  --reading-opacity: 1;
+  /* Espaço entre colunas, em múltiplos do corpo. */
+  --reading-gutter: 3.2;
+
+  /* ---------------------------------------------------------------------
+     PLANOS Z
+     --------------------------------------------------------------------- */
+  --z-stage: 0;
+  --z-scene: 10;
+  --z-nav: 20;
+  --z-intro: 50;
+  --z-top: 100;
+}
+
+/* =============================================================================
+   Preferência por movimento reduzido.
+   O site é feito de movimento, por isso não o podemos simplesmente desligar:
+   encurtamos tudo e deixamos as partículas pousadas no sítio certo.
+   O JS lê a mesma media query para cortar a deriva em repouso e baixar a
+   contagem de partículas — ver scripts/core/env.js.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-quick:   1ms;
+    --dur-calm:    1ms;
+    --dur-slow:    1ms;
+    --dur-breath:  1ms;
+    --intro-hold:    700ms;
+    --intro-fade:    300ms;
+    --intro-reveal:  400ms;
+    --intro-stagger:  18ms;
+    --intro-letter:  160ms;
+  }
+}
+
+/* =============================================================================
+   Contraste elevado: engrossa o fio dos botões e escurece a tinta.
+   ========================================================================== */
+@media (prefers-contrast: more) {
+  :root {
+    --ink: var(--ink-strong);
+    --stroke-color: #8e8e8b;
+    --layer-1-opacity: 0.3;
+    --layer-2-opacity: 0.48;
+    --layer-3-opacity: 0.72;
+    --layer-4-opacity: 1;
+  }
+}
+
+/* =============================================================================
+   Mistura de cor verdadeira, onde o motor a saiba fazer.
+
+   color-mix em oklab chegou ao Chrome 111, ao Safari 16.2 e ao Firefox 113,
+   todos de 2023. Abaixo disso valem os valores estáticos declarados acima: o
+   papel deixa de aquecer ao meio-dia e os fios dos botões deixam de ser
+   transparências, mas o site continua inteiro e com o mesmo aspeto a olho.
+
+   A interpolação é em oklab e não em sRGB porque a passagem entre o branco
+   frio e o creme, feita em sRGB, atravessa um caminho percetualmente escuro e
+   esverdeado que se vê ao longo do dia.
+   ========================================================================== */
+@supports (color: color-mix(in oklab, #000, #fff)) {
+  :root {
+    --paper: color-mix(in oklab, var(--paper-neutral), var(--paper-noon) calc(var(--warmth) * 100%));
+    --paper-vignette: color-mix(in oklab, var(--paper), #000 3.5%);
+    --stroke-color: color-mix(in oklab, var(--ink), transparent 72%);
+    --stroke-color-hover: color-mix(in oklab, var(--ink), transparent 15%);
+  }
+
+  @media (prefers-contrast: more) {
+    :root {
+      --stroke-color: color-mix(in oklab, var(--ink), transparent 40%);
+    }
+  }
+}

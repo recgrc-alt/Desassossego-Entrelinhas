@@ -1,0 +1,4 @@
+# O servidor de desenvolvimento não tem nada que fazer em produção: o Vercel
+# serve os ficheiros estáticos diretamente. Fica no repositório, por ser útil
+# a quem clona, mas não é publicado.
+servir.py

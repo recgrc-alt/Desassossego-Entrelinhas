@@ -1,0 +1,192 @@
+/* =============================================================================
+   base.css — Reposição do browser e fundações tipográficas.
+   Nada de componentes aqui: só elementos nus.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Margens por omissão do browser removidas de forma explícita e legível,
+   em vez de um `* { margin: 0 }` que depois obriga a reconstruir tudo. */
+body,
+h1, h2, h3, h4,
+p, figure, blockquote,
+dl, dd, ul, ol {
+  margin: 0;
+}
+
+ul[class],
+ol[class] {
+  padding: 0;
+  list-style: none;
+}
+
+html {
+  /* 100% em vez de um px fixo: respeita o tamanho de letra escolhido pelo
+     utilizador no browser, que é a base de toda a escala em rem. */
+  font-size: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* O scroll suave é movimento, e movimento não pedido: um salto de âncora
+   numa página de catorze poemas percorre o documento inteiro a rolar. Fica
+   fechado atrás da preferência, em vez de ser global e depois desmentido. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  min-height: 100vh;
+  /* svh e não vh nem dvh. vh ignora a barra de endereço do Safari iOS e
+     transborda; dvh acompanha-a, o que parece melhor mas faz a altura mudar
+     a cada scroll — e cada mudança redimensiona o backing store do canvas,
+     dezenas de vezes por segundo. svh é a altura com as barras visíveis:
+     estável, que é o que um palco precisa de ser. */
+  min-height: 100svh;
+
+  font-family: var(--font-serif);
+  font-size: var(--size-base);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-base);
+  color: var(--ink);
+
+  /* Duas declarações: a primeira é o recurso para quem não tem color-mix. */
+  background-color: var(--paper-neutral);
+  background-color: var(--paper);
+  transition: background-color var(--dur-breath) var(--ease-standard);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  /* O palco ocupa o ecrã todo; nunca há barras de scroll a aparecer por causa
+     de uma partícula que saiu da margem. */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* O cinzento azulado do toque no Android/iOS estraga o preto e branco. */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Alvo de toque mínimo de 44 px, como manda o guia de interface do iOS e,
+   com 48, o critério 2.5.8 das WCAG. Aplicado com min-height e padding
+   vertical em vez de altura fixa, para que um botão com duas linhas de texto
+   continue a crescer. */
+button {
+  min-height: 44px;
+}
+
+h1, h2, h3, h4 {
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+img,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+/* O atributo hidden é esconder, ponto final.
+   A regra `[hidden] { display: none }` vem da folha do browser, e QUALQUER
+   regra de autor a dizer display lhe ganha — um `.motion-offer { display:
+   flex }` escrito mais abaixo torna o atributo decorativo, e o elemento
+   aparece na mesma. É o único !important deste projeto, e é exatamente o
+   caso para que o !important existe: repor um comportamento da plataforma
+   que a cascata desfez por acidente. */
+[hidden] {
+  display: none !important;
+}
+
+/* Anel de foco, com a mesma tinta de todo o resto.
+
+   A ordem aqui não é cosmética. O padrão habitual — `:focus { outline: none }`
+   seguido de `:focus-visible { outline: ... }` — deixa sem foco visível
+   qualquer motor que não conheça :focus-visible, porque descarta a regra que
+   repõe o anel e mantém a que o tira. O Safari só a implementou na versão
+   15.4; o iOS 14 e 15.0-15.3 ficavam de fora, e quem navega por teclado
+   ficava sem saber onde está.
+
+   Por isso a remoção é que está fechada dentro do @supports: um motor que não
+   perceba :focus-visible descarta o bloco inteiro e fica com o anel de base,
+   que é feio em rato mas correto. */
+:focus {
+  outline: var(--focus-ring) solid var(--focus-color);
+  outline-offset: 4px;
+}
+
+@supports selector(:focus-visible) {
+  :focus {
+    outline: none;
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring) solid var(--focus-color);
+    outline-offset: 4px;
+  }
+}
+
+::selection {
+  color: var(--paper-neutral);
+  background: var(--ink);
+}
+
+/* Conteúdo exclusivo para tecnologias de apoio. O site é um canvas, logo o
+   texto verdadeiro tem de existir algures no DOM para quem não o vê. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Salto para o conteúdo, visível apenas quando recebe foco. */
+.skip-link {
+  position: absolute;
+  top: var(--space-sm);
+  left: var(--space-sm);
+  z-index: var(--z-top);
+  padding: var(--space-2xs) var(--space-sm);
+  color: var(--ink);
+  background: var(--paper-neutral);
+  border: var(--hairline) solid var(--ink);
+  transform: translateY(-200%);
+  transition: transform var(--dur-quick) var(--ease-enter);
+}
+
+/* Em regras separadas e não numa lista: uma lista de seletores é descartada
+   inteira se um dos membros for desconhecido, e perder-se-ia também o :focus. */
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}

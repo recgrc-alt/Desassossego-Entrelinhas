@@ -1,0 +1,17 @@
+# Configurações locais de editores e ferramentas
+.claude/
+.vscode/
+.idea/
+*.code-workspace
+
+# Vercel
+.vercel/
+
+# Python
+__pycache__/
+*.pyc
+
+# Lixo do sistema de ficheiros
+.DS_Store
+Thumbs.db
+desktop.ini

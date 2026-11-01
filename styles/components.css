@@ -1,0 +1,277 @@
+/* =============================================================================
+   components.css — Peças reutilizáveis: títulos, botões de fio, listas.
+   ========================================================================== */
+
+/* -----------------------------------------------------------------------------
+   .fades — primitiva de aparecimento e desaparecimento.
+   Usada por todos os painéis. Não usamos o atributo [hidden] para esconder,
+   porque display:none corta qualquer transição; usamos visibility, que é
+   animável em degrau e, ao contrário de opacity sozinha, retira mesmo o
+   elemento da ordem de tabulação e do leitor de ecrã.
+   O atraso em visibility espera que a opacidade termine antes de desaparecer.
+   -------------------------------------------------------------------------- */
+.fades {
+  opacity: var(--o-none);
+  visibility: hidden;
+  transition:
+    opacity var(--dur-calm) var(--ease-exit),
+    translate var(--dur-calm) var(--ease-exit),
+    visibility 0s linear var(--dur-calm);
+}
+
+/* O estado visível não está aqui: está em main.css, declarado uma única vez
+   para todos os painéis em função de body[data-stage]. Assim a decisão sobre
+   o que se vê em cada etapa vive toda no mesmo sítio. */
+
+/* Variante que entra a subir — usada no bloco central e no painel do poeta. */
+.fades--rise {
+  translate: 0 var(--space-sm);
+}
+
+/* -----------------------------------------------------------------------------
+   Identidade do projeto
+   -------------------------------------------------------------------------- */
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.brand__title {
+  font-size: var(--size-xl);
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--ink);
+}
+
+.brand__tagline {
+  font-size: var(--size-sm);
+  font-style: italic;
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent-2);
+}
+
+/* -----------------------------------------------------------------------------
+   Botão de fio — a peça interativa única de todo o site.
+   Sem preenchimento. Apenas um retângulo de tinta de 1px. Quando acende, o
+   fio escurece e o fundo recebe um banho de tinta a 6% — o suficiente para
+   o botão responder sem introduzir uma cor nova na paleta.
+   -------------------------------------------------------------------------- */
+/* --lit é um interruptor numérico, 0 ou 1, e é a única coisa que os estados
+   do botão alteram. As três cores derivam dele por color-mix, por isso o
+   estado aceso é definido UMA vez — aqui — e não repetido em cada gatilho
+   (hover, foco, selecionado) nem em cada variante.
+
+   As transições continuam a funcionar: o que muda é uma variável, mas o que
+   anima são as propriedades que a consomem, e essas (color, border-color,
+   background-color) são animáveis. */
+.wire {
+  --lit: 0;
+
+  /* Valores de recurso, para motores sem color-mix. O botão fica com o fio e
+     a tinta certos; o que perde é a resposta ao cursor, porque --lit deixa de
+     poder mexer numa mistura. O anel de foco continua a funcionar, que é o
+     que importa para quem navega por teclado. Ver o @supports mais abaixo. */
+  --wire-stroke: var(--stroke-color);
+  --wire-ink: var(--accent-1);
+  --wire-wash: transparent;
+
+  position: relative;
+  display: inline-block;
+  padding: var(--space-2xs) var(--space-md);
+  font-family: var(--font-serif);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--tracking-wide);
+  line-height: var(--leading-snug);
+  color: var(--wire-ink);
+  text-align: center;
+  white-space: nowrap;
+  background-color: var(--wire-wash);
+  border: var(--hairline) solid var(--wire-stroke);
+  border-radius: var(--radius-none);
+  transition:
+    color var(--dur-quick) var(--ease-standard),
+    border-color var(--dur-quick) var(--ease-standard),
+    background-color var(--dur-quick) var(--ease-standard),
+    letter-spacing var(--dur-calm) var(--ease-standard);
+}
+
+@supports (color: color-mix(in oklab, #000, #fff)) {
+  .wire {
+    --wire-stroke: color-mix(in oklab, var(--stroke-color), var(--stroke-color-hover) calc(var(--lit) * 100%));
+    --wire-ink: color-mix(in oklab, var(--accent-1), var(--ink) calc(var(--lit) * 100%));
+    --wire-wash: color-mix(in oklab, transparent, color-mix(in oklab, var(--ink), transparent 94%) calc(var(--lit) * 100%));
+  }
+
+  .wire--quiet {
+    border-bottom-color: color-mix(
+      in oklab,
+      var(--stroke-color),
+      var(--stroke-color-active) calc(var(--lit) * 100%)
+    );
+  }
+}
+
+/* Os gatilhos. Cada um acende; nenhum repete as cores.
+   :where() mantém a especificidade a zero, por isso qualquer modificador
+   definido depois ganha sem precisar de !important. */
+.wire:where(:focus-visible, :active, [aria-pressed="true"], [aria-current="true"]) {
+  --lit: 1;
+}
+
+/* O hover fica fechado dentro desta consulta. Num ecrã táctil o :hover
+   "pega": fica aceso depois do toque, porque o dedo não sai do elemento como
+   um cursor sai — e o botão parece selecionado quando não está. */
+@media (hover: hover) and (pointer: fine) {
+  .wire:hover {
+    --lit: 1;
+  }
+
+  .wire:hover,
+  .wire:focus-visible {
+    letter-spacing: calc(var(--tracking-wide) + 0.02em);
+  }
+}
+
+/* O estado selecionado precisa de mais do que estar aceso: tem de se
+   distinguir de um botão sob o cursor. Ganha o fio em tinta plena. */
+.wire:where([aria-pressed="true"], [aria-current="true"]) {
+  --wire-stroke: var(--stroke-color-active);
+}
+
+/* Variante discreta para a navegação dentro do painel do poeta: sem caixa,
+   só um fio por baixo, para não competir com o nome do autor. */
+.wire--quiet {
+  --wire-stroke: transparent;
+  padding-inline: 0;
+  padding-block: var(--space-2xs);
+  text-align: left;
+  white-space: normal;
+  border-width: 0 0 var(--hairline) 0;
+
+  /* Aqui o fio de baixo é o único traço. A versão que acende com --lit está
+     no @supports acima, junto das outras misturas; esta é a de recurso. */
+  border-bottom-color: var(--stroke-color);
+}
+
+/* Variante mínima para "voltar". */
+/* A variante nua não tem fio nenhum: o único sinal é a tinta. Declarar aqui
+   uma cor fixa tirava-a do sistema --lit e o botão deixava de responder ao
+   foco — era o que acontecia, e o comentário que estava aqui afirmava o
+   contrário. Redefine-se o extremo apagado, não a propriedade final. */
+.wire--bare {
+  --wire-stroke: transparent;
+  --wire-ink: var(--accent-2);
+  padding-inline: 0;
+  font-size: var(--size-xs);
+  font-style: italic;
+  letter-spacing: var(--tracking-base);
+  border: 0;
+}
+
+@supports (color: color-mix(in oklab, #000, #fff)) {
+  .wire--bare {
+    --wire-ink: color-mix(in oklab, var(--accent-2), var(--ink) calc(var(--lit) * 100%));
+  }
+}
+
+
+
+/* -----------------------------------------------------------------------------
+   Listas de escolha
+   -------------------------------------------------------------------------- */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  justify-content: center;
+}
+
+/* Os poetas numa linha só.
+   Abaixo de 54rem não há largura para cinco nomes legíveis lado a lado, e
+   insistir obrigaria a um corpo de letra que já ninguém lê — aí voltam a
+   quebrar, que é o mal menor. */
+@media (min-width: 54rem) {
+  .choices--row {
+    flex-wrap: nowrap;
+    gap: var(--space-2xs);
+  }
+
+  .choices--row .wire {
+    padding-inline: var(--space-sm);
+  }
+}
+
+.choices--stacked {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: var(--space-2xs);
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* -----------------------------------------------------------------------------
+   Painel do poeta
+   -------------------------------------------------------------------------- */
+.poet__name {
+  font-size: var(--size-lg);
+  font-weight: var(--weight-regular);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--ink);
+}
+
+.poet__years {
+  margin-top: var(--space-3xs);
+  font-size: var(--size-xs);
+  font-style: italic;
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent-2);
+}
+
+.poet__note {
+  margin-top: var(--space-2xs);
+  font-size: var(--size-xs);
+  line-height: var(--leading-base);
+  color: var(--accent-2);
+  max-width: 24rem;
+}
+
+.poet__label {
+  margin-bottom: var(--space-3xs);
+  font-size: var(--size-xs);
+  font-style: italic;
+  letter-spacing: var(--tracking-widest);
+  text-transform: lowercase;
+  color: var(--accent-3);
+}
+
+/* -----------------------------------------------------------------------------
+   Rodapé com a assinatura do poema
+   -------------------------------------------------------------------------- */
+.footnote__title {
+  font-size: var(--size-sm);
+  font-style: italic;
+  color: var(--accent-1);
+}
+
+.footnote__meta {
+  font-size: var(--size-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent-3);
+}
+
+/* -----------------------------------------------------------------------------
+   Aviso de domínio público / texto em falta
+   -------------------------------------------------------------------------- */
+.notice {
+  max-width: 26rem;
+  padding: var(--space-xs) 0 0;
+  border-top: var(--hairline) solid var(--stroke-color);
+  font-size: var(--size-xs);
+  font-style: italic;
+  line-height: var(--leading-base);
+  color: var(--accent-2);
+}

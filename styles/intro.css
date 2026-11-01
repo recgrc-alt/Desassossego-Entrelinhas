@@ -1,0 +1,154 @@
+/* =============================================================================
+   intro.css — Encenação de entrada.
+   -----------------------------------------------------------------------------
+   A entrada é uma folha de papel com uma saudação escrita, que se levanta e
+   desaparece para revelar o que estava por baixo.
+
+   São três tempos, nesta ordem:
+
+     1. CHEGADA    — a saudação escreve-se, letra a letra, da esquerda para a
+                     direita. Não é um bloco que aparece: é uma frase a ser
+                     dita.
+     2. PARTIDA    — na mesma ordem, cada letra sobe um pouco e apaga-se. A
+                     primeira sai enquanto a última ainda está firme, e é essa
+                     desfasagem que faz a frase evaporar-se em vez de ser
+                     desligada.
+     3. REVELAÇÃO  — a própria folha desvanece, como uma névoa a levantar, e
+                     por baixo está a página já composta e a mexer.
+
+   Por isso esta camada tem fundo opaco: não é um véu decorativo, é o que
+   esconde a home enquanto ela se monta. Quando desaparece, não há nada a
+   começar — há uma coisa que já estava a acontecer.
+
+   O atraso de cada letra vem de --i, que o JavaScript escreve em cada pedaço
+   (ver scripts/ui/letters.js). É o único número que vem de lá; tudo o resto
+   — quanto dura, com que curva, quanto sobe — está aqui.
+   ========================================================================== */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-intro);
+  display: grid;
+  align-items: center;
+  justify-items: start;
+  padding-inline: var(--gutter-left) var(--gutter-right);
+  pointer-events: none;
+
+  /* A folha. Opaca, e com a mesma temperatura do papel por baixo, para que o
+     que se vê ao desvanecer seja profundidade e não uma mudança de cor. */
+  background-color: var(--paper-neutral);
+  background-color: var(--paper);
+
+  opacity: var(--o-full);
+  transition: opacity var(--intro-reveal) var(--ease-standard);
+}
+
+.intro__greeting {
+  /* Um pouco acima do centro geométrico, pelo mesmo motivo do bloco central:
+     o centro ótico está mais alto do que o centro medido. */
+  translate: 0 -3vh;
+
+  font-family: var(--font-serif);
+  font-size: var(--intro-size);
+  font-weight: var(--weight-regular);
+  font-style: italic;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--accent-1);
+}
+
+/* -----------------------------------------------------------------------------
+   As letras.
+
+   inline-block porque uma caixa inline não aceita translate — e é o translate
+   que faz cada letra subir ao sair. white-space: pre para que o espaço entre
+   o travessão e a palavra continue a ocupar lugar depois de virar elemento.
+
+   O estado de repouso é invisível: a saudação só existe enquanto é animada, e
+   começar visível faria a palavra piscar no primeiro fotograma, antes de o
+   JavaScript ter posto a classe de chegada.
+   -------------------------------------------------------------------------- */
+.intro__greeting .letter {
+  display: inline-block;
+  white-space: pre;
+  opacity: var(--o-none);
+}
+
+/* animation-fill-mode: both, e não forwards.
+
+   O `backwards` do `both` é que faz a letra manter o estado inicial DURANTE o
+   seu atraso. Sem ele, uma letra que ainda não começou a sair mostraria o
+   estado de repouso — invisível — e a frase desapareceria de uma vez em vez
+   de se apagar da esquerda para a direita. É o erro clássico das animações
+   escalonadas, e é silencioso: a animação funciona, só não escalona. */
+.intro__greeting.is-in .letter {
+  animation: letter-arrive var(--intro-letter) var(--ease-enter) both;
+  animation-delay: calc(var(--i) * var(--intro-stagger));
+}
+
+.intro__greeting.is-leaving .letter {
+  animation: letter-leave var(--intro-letter) var(--ease-exit) both;
+  animation-delay: calc(var(--i) * var(--intro-stagger));
+}
+
+@keyframes letter-arrive {
+  from {
+    opacity: var(--o-none);
+    translate: 0 0.22em;
+  }
+  to {
+    opacity: var(--o-full);
+    translate: 0 0;
+  }
+}
+
+/* A subida é curta de propósito — pouco mais de meio corpo de letra. O que dá
+   a sensação de evaporação não é a distância percorrida: é a opacidade acabar
+   antes do movimento, de modo que a letra fique transparente a meio do
+   caminho e o resto da subida já não se veja. */
+@keyframes letter-leave {
+  from {
+    opacity: var(--o-full);
+    translate: 0 0;
+  }
+  to {
+    opacity: var(--o-none);
+    translate: 0 -0.62em;
+  }
+}
+
+/* A névoa levanta. */
+.intro.is-revealing {
+  opacity: var(--o-none);
+}
+
+/* E a camada deixa de existir, para não ficar uma grelha fixa a apanhar foco
+   ou a atrapalhar o leitor de ecrã. */
+.intro.is-done {
+  display: none;
+}
+
+/* Saída instantânea, sem encenação nenhuma. Usada quando não há nada a
+   encenar — com movimento reduzido, a página abre já no estado final. */
+.intro__greeting.is-handed-over .letter {
+  animation: none;
+  opacity: var(--o-none);
+}
+
+/* -----------------------------------------------------------------------------
+   Com movimento reduzido ninguém sobe: as letras aparecem e saem, na mesma
+   ordem, sem deslocamento. O escalonamento fica — é informação, não
+   movimento — mas muito mais curto (ver variables.css).
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes letter-arrive {
+    from { opacity: var(--o-none); }
+    to   { opacity: var(--o-full); }
+  }
+
+  @keyframes letter-leave {
+    from { opacity: var(--o-full); }
+    to   { opacity: var(--o-none); }
+  }
+}

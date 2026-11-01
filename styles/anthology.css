@@ -1,0 +1,147 @@
+/* =============================================================================
+   anthology.css — O conteúdo verdadeiro da página.
+   -----------------------------------------------------------------------------
+   Os poemas estão escritos no index.html, não injetados por JavaScript. Há
+   três razões, todas elas decisivas:
+
+     1. É a única fonte de verdade. O motor de partículas lê os versos daqui
+        (ver scripts/data/library.js), por isso é impossível o que está no
+        canvas divergir do que está no documento.
+     2. Um leitor de ecrã, o modo de leitura do browser e um motor de busca
+        veem um livro, não um canvas vazio.
+     3. Sem JavaScript — por opção, por erro de rede, ou porque o Firefox com
+        resistFingerprinting degrada o getImageData — o site continua a ser o
+        que diz ser: uma antologia de poesia portuguesa.
+
+   Com JavaScript ativo a antologia é escondida visualmente, mas permanece na
+   árvore de acessibilidade. Esconder com `display: none` retirá-la-ia também
+   daí, que é exatamente o contrário do que se pretende.
+   ========================================================================== */
+
+.anthology {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* -----------------------------------------------------------------------------
+   Quando o motor falha a arrancar — um módulo que não carrega, um contexto 2D
+   que vem nulo, uma exceção inesperada — scripts/main.js põe esta classe no
+   <html> e a antologia volta a ser uma página de livro. É o mesmo destino da
+   variante sem JavaScript (styles/no-js.css), por outro caminho: ali o
+   browser nunca correu o script, aqui o script correu e desistiu.
+   -------------------------------------------------------------------------- */
+.engine-failed .anthology {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: 42rem;
+  padding: var(--space-2xl) var(--gutter);
+  margin: 0 auto;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+}
+
+.engine-failed .stage,
+.engine-failed .intro,
+.engine-failed .scene,
+.engine-failed .motion-offer {
+  display: none;
+}
+
+.engine-failed body {
+  overflow: auto;
+}
+
+/* -----------------------------------------------------------------------------
+   Tipografia da antologia.
+   Estas regras só se veem na variante sem JavaScript, mas existem a sério:
+   uma página de reserva que ninguém compôs é uma página que ninguém lê.
+   -------------------------------------------------------------------------- */
+.anthology__title {
+  font-size: var(--size-xl);
+  letter-spacing: var(--tracking-tight);
+}
+
+.anthology__intro {
+  max-width: 34rem;
+  margin-top: var(--space-sm);
+  font-size: var(--size-base);
+  line-height: var(--leading-loose);
+  color: var(--accent-1);
+}
+
+.anthology__poet {
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-lg);
+  border-top: var(--hairline) solid var(--stroke-color);
+}
+
+.anthology__name {
+  font-size: var(--size-lg);
+  letter-spacing: var(--tracking-tight);
+}
+
+.anthology__years {
+  margin-top: var(--space-3xs);
+  font-size: var(--size-xs);
+  font-style: italic;
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent-2);
+}
+
+.anthology__note {
+  max-width: 32rem;
+  margin-top: var(--space-2xs);
+  font-size: var(--size-sm);
+  line-height: var(--leading-base);
+  color: var(--accent-1);
+}
+
+.anthology__rights {
+  max-width: 32rem;
+  margin-top: var(--space-md);
+  padding-top: var(--space-xs);
+  border-top: var(--hairline) solid var(--stroke-color);
+  font-size: var(--size-sm);
+  font-style: italic;
+  line-height: var(--leading-base);
+  color: var(--accent-2);
+}
+
+.anthology__poem {
+  margin-top: var(--space-xl);
+}
+
+.anthology__poem-title {
+  font-size: var(--size-md);
+  font-style: italic;
+}
+
+.anthology__source {
+  margin-top: var(--space-3xs);
+  font-size: var(--size-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--accent-3);
+}
+
+/* O verso vai em <pre> porque a quebra de linha de um poema é conteúdo, não
+   apresentação: num <p> com <br> a métrica fica à mercê do refluxo, e o
+   JavaScript teria de adivinhar onde acaba cada verso. Em <pre> o texto é
+   exatamente o que foi transcrito, e lê-se com textContent sem analisar nada.
+   A família é reposta porque <pre> herda monoespaçada do browser. */
+.anthology__verse {
+  margin-top: var(--space-sm);
+  font-family: var(--font-serif);
+  font-size: var(--size-base);
+  line-height: var(--leading-loose);
+  white-space: pre-wrap;
+  color: var(--ink);
+}

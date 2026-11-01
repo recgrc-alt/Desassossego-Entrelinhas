@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <!-- viewport-fit=cover entrega o ecra inteiro no iPhone; as margens seguras
+       sao repostas em CSS com env(safe-area-inset-*). Nunca user-scalable=no:
+       o iOS ignora-o e e falha de WCAG 1.4.4. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Os rostos da poesia portuguesa compostos pelas letras das suas próprias obras. Camões, Pessoa, Florbela Espanca, Sá-Carneiro e Sophia de Mello Breyner Andresen.">
+  <title>Desassossego Entrelinhas</title>
+
+  <link rel="canonical" href="https://desassossego-entrelinhas.vercel.app/">
+
+  <!-- Cartão de partilha. O endereço tem de ser absoluto: o Facebook, o
+       LinkedIn e o WhatsApp não resolvem caminhos relativos e o link sai sem
+       imagem. A imagem é, para já, uma fotografia do próprio site — está aqui
+       para o link não aparecer nu, e pede arte própria. -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="pt_PT">
+  <meta property="og:site_name" content="Desassossego Entrelinhas">
+  <meta property="og:url" content="https://desassossego-entrelinhas.vercel.app/">
+  <meta property="og:title" content="Desassossego Entrelinhas">
+  <meta property="og:description" content="Os rostos da poesia portuguesa compostos pelas letras das suas próprias obras.">
+  <meta property="og:image" content="https://desassossego-entrelinhas.vercel.app/docs/retrato.jpg">
+  <meta property="og:image:alt" content="O rosto de Camões composto por milhares de letras.">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- A ligacao a Google Fonts abre-se antes de o CSS a pedir: poupa o
+       handshake de TLS no caminho critico. crossorigin e obrigatorio no
+       preconnect de fontes, senao abre-se uma segunda ligacao. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&amp;display=swap">
+
+  <!-- Folhas separadas, ligadas em paralelo. A ordem e a da cascata:
+       variaveis, elementos, espaco, pecas, antologia, entrada, encenacao. -->
+  <link rel="stylesheet" href="styles/variables.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/anthology.css">
+  <link rel="stylesheet" href="styles/intro.css">
+  <link rel="stylesheet" href="styles/main.css">
+
+  <!-- Sem JavaScript o site deixa de ser um palco e passa a ser um livro.
+       Esta folha trata disso, e é o browser que decide se a carrega. -->
+  <noscript><link rel="stylesheet" href="styles/no-js.css"></noscript>
+</head>
+
+<body data-stage="intro">
+
+  <a class="skip-link" href="#antologia">Saltar para os poemas em texto</a>
+
+  <!-- ======================================================================
+       O PALCO
+       Puramente decorativo para uma tecnologia de apoio: tudo o que aqui e
+       desenhado existe em texto verdadeiro na antologia, mais abaixo.
+       ====================================================================== -->
+  <canvas id="palco" class="stage" aria-hidden="true"></canvas>
+
+  <!-- ======================================================================
+       ENTRADA
+       Texto real e nitido. Na hora certa o JavaScript amostra os pixeis das
+       suas letras e entrega-os ao sistema de particulas, que o evapora.
+       ====================================================================== -->
+  <div class="intro" id="intro">
+    <!-- O travessão é de diálogo: a saudação é alguém a falar, não um
+         letreiro. O hífen de "Bem-vindo" é insecavél (U+2011) para a palavra
+         nunca partir em duas linhas num ecrã estreito. O rótulo existe porque
+         o JavaScript parte isto em onze elementos, um por letra, e sem ele um
+         leitor de ecrã soletraria. -->
+    <p class="intro__greeting" id="saudacao" aria-label="Bem-vindo">&#8212; Bem&#8209;vindo</p>
+  </div>
+
+  <!-- ======================================================================
+       CENA INTERATIVA
+       So existe com JavaScript. Sem ele, o browser mostra a antologia em
+       baixo, que e o conteudo verdadeiro desta pagina.
+       ====================================================================== -->
+  <div class="scene" id="cena" hidden>
+
+    <div class="centre fades fades--rise" id="centro">
+      <div class="brand">
+        <h1 class="brand__title">Desassossego Entrelinhas</h1>
+        <p class="brand__tagline">Explora entre as linhas</p>
+      </div>
+
+      <nav aria-label="Poetas">
+        <ul class="choices choices--row" id="lista-poetas"></ul>
+      </nav>
+    </div>
+
+    <div class="poet fades fades--rise" id="painel-poeta">
+      <div>
+        <h2 class="poet__name" id="poeta-nome"></h2>
+        <p class="poet__years" id="poeta-anos"></p>
+        <p class="poet__note" id="poeta-nota"></p>
+      </div>
+
+      <nav aria-label="Poemas do autor">
+        <p class="poet__label" id="rotulo-poemas">poemas</p>
+        <ul class="choices choices--stacked" id="lista-poemas" aria-labelledby="rotulo-poemas"></ul>
+      </nav>
+
+      <p class="notice" id="aviso-direitos" hidden></p>
+
+      <div>
+        <button type="button" class="wire wire--bare" id="botao-voltar">&#8592; voltar aos poetas</button>
+      </div>
+    </div>
+
+    <div class="footnote fades" id="rodape">
+      <p class="footnote__title" id="poema-titulo"></p>
+      <p class="footnote__meta" id="poema-meta"></p>
+    </div>
+
+    <!-- Moldura invisivel que define, em CSS, onde o poema e composto.
+         Medida pelo JavaScript; nunca pinta nada. -->
+    <div class="poem-frame" id="moldura-poema" aria-hidden="true"></div>
+
+  </div>
+
+  <!-- Oferecido a quem pediu menos movimento. Fica escondido ate ser preciso. -->
+  <div class="motion-offer" id="oferta-movimento" hidden>
+    <p class="motion-offer__text">
+      O teu sistema pede menos movimento, por isso a pagina esta parada: o
+      rosto esta composto e os poemas estao em baixo, em texto.
+    </p>
+    <button type="button" class="wire" id="botao-movimento">Ver em movimento</button>
+  </div>
+
+  <!-- Anuncios para leitores de ecra. Poucos e espacados: uma regiao
+       aria-live atualizada a cada fotograma e inutilizavel. -->
+  <p class="sr-only" id="anuncio" aria-live="polite" aria-atomic="true"></p>
+
+  <!-- ======================================================================
+       ANTOLOGIA
+       O conteudo verdadeiro da pagina, servido no HTML e nao injetado por
+       JavaScript. E daqui que o motor le os poemas - ha uma unica fonte de
+       verdade - e e isto que ficam a ver o leitor de ecra, o modo de leitura,
+       o motor de busca e quem tem o JavaScript desligado.
+       ====================================================================== -->
+  <main id="conteudo">
+    <div class="anthology" id="antologia">
+      <h2 class="anthology__title">Antologia</h2>
+      <p class="anthology__intro">
+        Os poemas desta antologia estão em domínio público. O site compõe-nos
+        com partículas tipográficas; aqui ficam eles em texto corrido, que é como
+        sempre existiram.
+      </p>
+
+      <article class="anthology__poet"
+               data-poet="luis-vaz-de-camoes"
+               data-short="Luís de Camões"
+               data-years="1524/25–1580"
+               data-image="assets/images/luis-vaz-de-camoes.png">
+        <h3 class="anthology__name">Luís Vaz de Camões</h3>
+        <p class="anthology__years">1524/25–1580</p>
+        <p class="anthology__note">Maior poeta do classicismo português, autor de Os Lusíadas (1572) e de uma lírica de sonetos que fixou o decassílabo e a sintaxe poética da língua.</p>
+
+        <section class="anthology__poem" data-poem="amor-e-fogo-que-arde-sem-se-ver" data-year="publicado nas Rimas (1598)">
+          <h4 class="anthology__poem-title">Amor é fogo que arde sem se ver</h4>
+          <p class="anthology__source">publicado nas Rimas (1598)</p>
+          <pre class="anthology__verse" data-verse>Amor é um fogo que arde sem se ver,
+É ferida que dói, e não se sente;
+É um contentamento descontente,
+É dor que desatina sem doer.
+
+É um não querer mais que bem querer;
+É um andar solitário entre a gente;
+É nunca contentar-se de contente;
+É um cuidar que ganha em se perder.
+
+É querer estar preso por vontade;
+É servir a quem vence, o vencedor;
+É ter com quem nos mata, lealdade.
+
+Mas como causar pode seu favor
+nos corações humanos amizade,
+se tão contrário a si é o mesmo Amor?</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="alma-minha-gentil-que-te-partiste" data-year="publicado nas Rhythmas (1595)">
+          <h4 class="anthology__poem-title">Alma minha gentil, que te partiste</h4>
+          <p class="anthology__source">publicado nas Rhythmas (1595)</p>
+          <pre class="anthology__verse" data-verse>Alma minha gentil, que te partiste
+Tão cedo desta vida descontente,
+Repousa lá no Céu eternamente,
+E viva eu cá na terra sempre triste.
+
+Se lá no assento Etéreo, onde subiste,
+Memória desta vida se consente,
+Não te esqueças daquele amor ardente
+Que já nos olhos meus tão puro viste.
+
+E se vires que pode merecer-te
+Alguma cousa a dor que me ficou
+Da mágoa, sem remédio, de perder-te,
+
+Roga a Deus, que teus anos encurtou,
+Que tão cedo de cá me leve a ver-te,
+Quão cedo de meus olhos te levou.</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="mudam-se-os-tempos-mudam-se-as-vontades" data-year="publicado nas Obras (1598/1843)">
+          <h4 class="anthology__poem-title">Mudam-se os tempos, mudam-se as vontades</h4>
+          <p class="anthology__source">publicado nas Obras (1598/1843)</p>
+          <pre class="anthology__verse" data-verse>Mudam-se os tempos, mudam-se as vontades,
+Muda-se o ser, muda-se a confiança:
+Todo o mundo é composto de mudança,
+Tomando sempre novas qualidades.
+
+Continuamente vemos novidades,
+Diferentes em tudo da esperança:
+Do mal ficam as mágoas na lembrança,
+E do bem (se algum houve) as saudades.
+
+O tempo cobre o chão de verde manto,
+Que já coberto foi de neve fria,
+E em mim converte em choro o doce canto.
+
+E afora este mudar-se cada dia,
+Outra mudança faz de mor espanto,
+Que não se muda já como soía.</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="os-lusiadas-estancia-i" data-year="1572">
+          <h4 class="anthology__poem-title">Os Lusíadas — Canto I, estância 1</h4>
+          <p class="anthology__source">1572</p>
+          <pre class="anthology__verse" data-verse>As armas e os barões assinalados,
+Que da ocidental praia Lusitana,
+Por mares nunca de antes navegados,
+Passaram ainda além da Taprobana,
+Em perigos e guerras esforçados,
+Mais do que prometia a força humana,
+E entre gente remota edificaram
+Novo Reino, que tanto sublimaram;</pre>
+        </section>
+      </article>
+
+      <article class="anthology__poet"
+               data-poet="fernando-pessoa"
+               data-short="Fernando Pessoa"
+               data-years="1888–1935"
+               data-image="assets/images/fernando-pessoa.png">
+        <h3 class="anthology__name">Fernando Pessoa</h3>
+        <p class="anthology__years">1888–1935</p>
+        <p class="anthology__note">Poeta maior do modernismo português, que desdobrou a própria autoria em heterónimos (Caeiro, Reis, Campos) e publicou em vida apenas Mensagem (1934).</p>
+
+        <section class="anthology__poem" data-poem="autopsicografia" data-year="1931 (publicado na revista Presença, n.º 36, 1932)">
+          <h4 class="anthology__poem-title">Autopsicografia</h4>
+          <p class="anthology__source">1931 (publicado na revista Presença, n.º 36, 1932)</p>
+          <pre class="anthology__verse" data-verse>O poeta é um fingidor
+Finge tão completamente
+Que chega a fingir que é dor
+A dor que deveras sente.
+
+E os que lêem o que escreve,
+Na dor lida sentem bem,
+Não as duas que ele teve,
+Mas só a que eles não têm.
+
+E assim nas calhas de roda
+Gira, a entreter a razão,
+Esse comboio de corda
+Que se chama coração.</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="mar-portugues" data-year="1934 (Mensagem)">
+          <h4 class="anthology__poem-title">Mar Português</h4>
+          <p class="anthology__source">1934 (Mensagem)</p>
+          <pre class="anthology__verse" data-verse>Ó mar salgado, quanto do teu sal
+São lágrimas de Portugal!
+Por te cruzarmos, quantas mães choraram,
+Quantos filhos em vão rezaram!
+Quantas noivas ficaram por casar
+Para que fosses nosso, ó mar!
+
+Valeu a pena? Tudo vale a pena
+Se a alma não é pequena.
+Quem quer passar além do Bojador
+Tem que passar além da dor.
+Deus ao mar o perigo e o abismo deu,
+Mas nele é que espelhou o céu.</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="nao-sei-quantas-almas-tenho" data-year="24-08-1930">
+          <h4 class="anthology__poem-title">Não sei quantas almas tenho</h4>
+          <p class="anthology__source">24-08-1930</p>
+          <pre class="anthology__verse" data-verse>Não sei quantas almas tenho.
+Cada momento mudei.
+Continuamente me estranho.
+Nunca me vi nem achei.
+De tanto ser, só tenho alma.
+Quem tem alma não tem calma.
+Quem vê é só o que vê,
+Quem sente não é quem é,
+
+Atento ao que sou e vejo,
+Torno-me eles e não eu.
+Cada meu sonho ou desejo
+É do que nasce e não meu.
+Sou minha própria paisagem,
+Assisto à minha passagem,
+Diverso, móbil e só,
+Não sei sentir-me onde estou.
+
+Por isso, alheio, vou lendo
+Como páginas, meu ser.
+O que segue não prevendo,
+O que passou a esquecer.
+Noto à margem do que li
+O que julguei que senti.
+Releio e digo: «Fui eu?»
+Deus sabe, porque o escreveu.</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="o-luar-atraves-dos-altos-ramos" data-year="1925 — Alberto Caeiro, O Guardador de Rebanhos, XXXV (Athena, n.º 4)">
+          <h4 class="anthology__poem-title">O luar através dos altos ramos</h4>
+          <p class="anthology__source">1925 — Alberto Caeiro, O Guardador de Rebanhos, XXXV (Athena, n.º 4)</p>
+          <pre class="anthology__verse" data-verse>O luar através dos altos ramos,
+Dizem os poetas todos que ele é mais
+Que o luar através dos altos ramos.
+
+Mas para mim, que não sei o que penso,
+O que o luar através dos altos ramos
+É, além de ser
+O luar através dos altos ramos,
+É não ser mais
+Que o luar através dos altos ramos.</pre>
+        </section>
+      </article>
+
+      <article class="anthology__poet"
+               data-poet="florbela-espanca"
+               data-short="Florbela Espanca"
+               data-years="1894–1930"
+               data-image="assets/images/florbela-espanca.png">
+        <h3 class="anthology__name">Florbela Espanca</h3>
+        <p class="anthology__years">1894–1930</p>
+        <p class="anthology__note">Sonetista alentejana de voz intensamente erótica e dolorosa, reconhecida só depois da morte prematura aos 35 anos.</p>
+
+        <section class="anthology__poem" data-poem="ser-poeta" data-year="1931 (Charneca em Flor)">
+          <h4 class="anthology__poem-title">Ser Poeta</h4>
+          <p class="anthology__source">1931 (Charneca em Flor)</p>
+          <pre class="anthology__verse" data-verse>Ser poeta é ser mais alto, é ser maior
+Do que os homens! Morder como quem beija!
+É ser mendigo e dar como quem seja
+Rei do Reino de Aquém e de Além Dor!
+
+É ter de mil desejos o esplendor
+E não saber sequer que se deseja!
+É ter cá dentro um astro que flameja,
+É ter garras e asas de condor!
+
+É ter fome, é ter sede de Infinito!
+Por elmo, as manhãs de oiro e de cetim...
+É condensar o mundo num só grito!
+
+E é amar-te, assim, perdidamente...
+É seres alma e sangue e vida em mim
+E dizê-lo cantando a toda a gente!</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="fanatismo" data-year="1923 (Livro de Sóror Saudade)">
+          <h4 class="anthology__poem-title">Fanatismo</h4>
+          <p class="anthology__source">1923 (Livro de Sóror Saudade)</p>
+          <pre class="anthology__verse" data-verse>Minh&#x27;alma, de sonhar-te, anda perdida.
+Meus olhos andam cegos de te ver!
+Não és sequer razão do meu viver,
+Pois que tu és já toda a minha vida!
+
+Não vejo nada assim enlouquecida...
+Passo no mundo, meu Amor, a ler
+No misterioso livro do teu ser
+A mesma história tantas vezes lida!
+
+«Tudo no mundo é frágil, tudo passa...»
+Quando me dizem isto, toda a graça
+Duma boca divina fala em mim!
+
+E, olhos postos em ti, digo de rastros:
+«Ah! Podem voar mundos, morrer astros,
+Que tu és como Deus: Princípio e Fim!...»</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="amar" data-year="1931 (Charneca em Flor)">
+          <h4 class="anthology__poem-title">Amar!</h4>
+          <p class="anthology__source">1931 (Charneca em Flor)</p>
+          <pre class="anthology__verse" data-verse>Eu quero amar, amar perdidamente!
+Amar só por amar: Aqui... além...
+Mais Este e Aquele, o Outro e toda a gente...
+Amar! Amar! E não amar ninguém!
+
+Recordar? Esquecer? Indiferente!...
+Prender ou desprender? É mal? É bem?
+Quem disser que se pode amar alguém
+Durante a vida inteira é porque mente!
+
+Há uma primavera em cada vida:
+É preciso cantá-la assim florida,
+Pois se Deus nos deu voz, foi p&#x27;ra cantar!
+
+E se um dia hei de ser pó, cinza e nada
+Que seja a minha noite uma alvorada,
+Que me saiba perder... p&#x27;ra me encontrar...</pre>
+        </section>
+      </article>
+
+      <article class="anthology__poet"
+               data-poet="mario-de-sa-carneiro"
+               data-short="Mário de Sá-Carneiro"
+               data-years="1890–1916"
+               data-image="assets/images/mario-de-sa-carneiro.png">
+        <h3 class="anthology__name">Mário de Sá-Carneiro</h3>
+        <p class="anthology__years">1890–1916</p>
+        <p class="anthology__note">Companheiro de Pessoa na revista Orpheu, levou ao extremo o poema da dissolução do eu antes de se suicidar em Paris aos 25 anos.</p>
+
+        <section class="anthology__poem" data-poem="quase" data-year="1914 (Dispersão) — escrito em Paris, 13 de maio de 1913">
+          <h4 class="anthology__poem-title">Quase</h4>
+          <p class="anthology__source">1914 (Dispersão) — escrito em Paris, 13 de maio de 1913</p>
+          <pre class="anthology__verse" data-verse>Um pouco mais de sol — eu era brasa,
+Um pouco mais de azul — eu era além.
+Para atingir, faltou-me um golpe d&#x27;asa...
+Se ao menos eu permanecesse aquém...
+
+Assombro ou paz? Em vão... Tudo esvaído
+Num baixo mar enganador d&#x27;espuma;
+E o grande sonho despertado em bruma,
+O grande sonho — ó dor! — quase vivido...
+
+Quase o amor, quase o triunfo e a chama,
+Quase o princípio e o fim — quase a expansão...
+Mas na minh&#x27;alma tudo se derrama...
+Entanto nada foi só ilusão!
+
+De tudo houve um começo... e tudo errou...
+— Ai a dor de ser-quase, dor sem fim... —
+Eu falhei-me entre os mais, falhei em mim,
+Asa que se elançou mas não voou...
+
+Momentos d&#x27;alma que desbaratei...
+Templos aonde nunca pus um altar...
+Rios que perdi sem os levar ao mar...
+Ânsias que foram mas que não fixei...
+
+Se me vagueio, encontro só indícios...
+Ogivas para o sol — vejo-as cerradas;
+E mãos d&#x27;herói, sem fé, acobardadas,
+Puseram grades sobre os precipícios...
+
+Num ímpeto difuso de quebranto,
+Tudo encetei e nada possuí...
+Hoje, de mim, só resta o desencanto
+Das coisas que beijei mas não vivi...
+
+. . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . .
+
+Um pouco mais de sol — e fora brasa,
+Um pouco mais de azul — e fora além.
+Para atingir, faltou-me um golpe d&#x27;asa...
+Se ao menos eu permanecesse aquém...</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="dispersao" data-year="1914 (Dispersão) — primeiras oito estrofes">
+          <h4 class="anthology__poem-title">Dispersão</h4>
+          <p class="anthology__source">1914 (Dispersão) — primeiras oito estrofes, escritas em Paris em maio de 1913</p>
+          <pre class="anthology__verse" data-verse>Perdi-me dentro de mim
+Porque eu era labirinto,
+E hoje, quando me sinto,
+É com saudades de mim.
+
+Passei pela minha vida
+Um astro doido a sonhar.
+Na ânsia de ultrapassar,
+Nem dei pela minha vida...
+
+Para mim é sempre ontem,
+Não tenho amanhã nem hoje:
+O tempo que aos outros foge
+Cai sobre mim feito ontem.
+
+(O Domingo de Paris
+Lembra-me o desaparecido
+Que sentia comovido
+Os Domingos de Paris:
+
+Porque um domingo é família,
+É bem-estar, é singeleza,
+E os que olham a beleza
+Não têm bem-estar nem família).
+
+O pobre moço das ânsias...
+Tu, sim, tu eras alguém!
+E foi por isso também
+Que te abismaste nas ânsias.
+
+A grande ave dourada
+Bateu asas para os céus,
+Mas fechou-as saciada
+Ao ver que ganhava os céus.
+
+Como se chora um amante,
+Assim me choro a mim mesmo:
+Eu fui amante inconstante
+Que se traiu a si mesmo.</pre>
+        </section>
+
+        <section class="anthology__poem" data-poem="escavacao" data-year="1914 (Dispersão) — escrito em Paris, 3 de maio de 1913">
+          <h4 class="anthology__poem-title">Escavação</h4>
+          <p class="anthology__source">1914 (Dispersão) — escrito em Paris, 3 de maio de 1913</p>
+          <pre class="anthology__verse" data-verse>Numa ânsia de ter alguma cousa,
+Divago por mim mesmo a procurar,
+Desço-me todo, em vão, sem nada achar,
+E a minh&#x27;alma perdida não repousa.
+
+Nada tendo, decido-me a criar:
+Brando a espada: sou luz harmoniosa
+E chama genial que tudo ousa
+Unicamente à força de sonhar...
+
+Mas a vitória fulva esvai-se logo...
+E cinzas, cinzas só, em vez do fogo...
+— Onde existo que não existo em mim?
+
+. . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . .
+
+Um cemitério falso sem ossadas,
+Noites d&#x27;amor sem bocas esmagadas —
+Tudo outro espasmo que princípio ou fim...</pre>
+        </section>
+      </article>
+
+      <article class="anthology__poet"
+               data-poet="sophia-de-mello-breyner-andresen"
+               data-short="Sophia Andresen"
+               data-years="1919–2004"
+               data-image="assets/images/sophia-de-mello-breyner-andresen.png">
+        <h3 class="anthology__name">Sophia de Mello Breyner Andresen</h3>
+        <p class="anthology__years">1919–2004</p>
+        <p class="anthology__note">Poeta do mar, da claridade e da justiça; primeira mulher a receber o Prémio Camões, em 1999.</p>
+        <p class="anthology__rights" data-rights>A obra de Sophia está protegida por direito de autor até 1 de janeiro de 2075, setenta anos depois da sua morte. O rosto fica; os versos esperam numa biblioteca.</p>
+      </article>
+
+    </div>
+  </main>
+
+  <script type="module" src="scripts/main.js"></script>
+</body>
+</html>

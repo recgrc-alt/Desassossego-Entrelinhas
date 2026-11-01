@@ -1,0 +1,38 @@
+/* =============================================================================
+   no-js.css — Carregada apenas de dentro de <noscript>.
+   -----------------------------------------------------------------------------
+   Quando o JavaScript está desligado, o browser carrega esta folha e o site
+   passa a ser o que sempre foi por baixo: uma antologia em texto corrido.
+
+   Usa-se um <link> dentro de <noscript> em vez do truque habitual de pôr uma
+   classe "no-js" no <html> e removê-la depois por script. O truque obriga a
+   um script inline no <head> — que é precisamente o que este projeto não
+   quer — e deixa passar um instante de página por compor. Assim não há
+   script nenhum e não há cintilação.
+
+   (O caso diferente de o JavaScript estar ligado mas o motor falhar a
+   arrancar é tratado pela classe .engine-failed, em anthology.css.)
+   ========================================================================== */
+
+.anthology {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: 42rem;
+  padding: var(--space-2xl) var(--gutter);
+  margin: 0 auto;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+}
+
+.stage,
+.intro,
+.scene,
+.motion-offer {
+  display: none;
+}
+
+body {
+  overflow: auto;
+}

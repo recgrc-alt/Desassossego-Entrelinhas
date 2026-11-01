@@ -1,0 +1,169 @@
+/* =============================================================================
+   layout.css — Arquitetura espacial da página.
+   -----------------------------------------------------------------------------
+   Há dois planos sobrepostos que ocupam o ecrã inteiro:
+
+     1. #palco  — o <canvas> onde vivem as partículas. Não recebe o rato.
+     2. .scene  — a camada de DOM (títulos, botões). Também não recebe o rato,
+                  exceto nos seus elementos interativos, para que o campo de
+                  forças do cursor funcione em todo o ecrã sem ser interrompido
+                  por caixas invisíveis.
+
+   A posição do rato é lida na janela, nunca no canvas, precisamente por causa
+   do pointer-events: none acima.
+   ========================================================================== */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-stage);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+
+  /* touch-action apenas aqui, nunca no body: no body desligaria o scroll da
+     antologia, que é o conteúdo da página. */
+  touch-action: none;
+
+  /* Véu radial subtil: o centro fica em papel puro, as bordas ganham um
+     grama de sombra. Impede que o branco leia como ecrã apagado. */
+  background:
+    radial-gradient(
+      ellipse 120% 100% at 50% 45%,
+      transparent 40%,
+      var(--paper-vignette) 100%
+    );
+}
+
+/* Uma grelha de uma só célula, com TODOS os filhos empilhados nela.
+   A tentação é dar uma linha a cada painel — topo, centro, rodapé — e deixar
+   a grelha arrumá-los. Não funciona aqui: o painel do poeta mede mais de
+   trezentos píxeis e, ocupando uma linha própria, empurra a linha do meio
+   para baixo. O poema, que é composto para a altura dessa linha, passa a ser
+   calculado para um espaço que já não é o do ecrã e transborda por baixo.
+
+   Com todos na mesma célula, cada painel ancora-se onde quer com justify-self
+   e align-self, e nenhum tem influência sobre o espaço dos outros — que é
+   exatamente o que se quer de camadas sobrepostas. */
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scene);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  padding: var(--gutter-top) var(--gutter-right) var(--gutter-bottom) var(--gutter-left);
+  pointer-events: none;
+}
+
+.scene > * {
+  grid-area: 1 / 1;
+}
+
+/* Tudo o que seja clicável ou focável volta a aceitar o rato. */
+.scene a,
+.scene button,
+.scene [tabindex] {
+  pointer-events: auto;
+}
+
+/* -----------------------------------------------------------------------------
+   Bloco central — identidade do projeto e escolha de poeta.
+   Vive no centro ótico do ecrã, não no centro geométrico: o olho lê um bloco
+   perfeitamente centrado como estando demasiado baixo, e daí o recuo de 4vh.
+   -------------------------------------------------------------------------- */
+.centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xl);
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  max-width: 62rem;
+  translate: 0 -4vh;
+  text-align: center;
+}
+
+/* -----------------------------------------------------------------------------
+   Painel do poeta — encostado à margem esquerda, em cima.
+   -------------------------------------------------------------------------- */
+.poet {
+  justify-self: start;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: var(--poet-panel-width);
+  text-align: left;
+}
+
+/* -----------------------------------------------------------------------------
+   Rodapé — assinatura do poema em curso, à direita, discreta.
+   -------------------------------------------------------------------------- */
+.footnote {
+  justify-self: end;
+  align-self: end;
+  max-width: min(28rem, 70vw);
+  text-align: right;
+}
+
+/* -----------------------------------------------------------------------------
+   Área reservada ao poema desenhado em partículas.
+   Estas medidas não pintam nada: existem para que o JavaScript
+   (scripts/targets/text-sampler.js) saiba exatamente onde compor a grelha de
+   glifos, lendo-as com getComputedStyle. Assim a composição do poema continua
+   a ser uma decisão de CSS e não um número escondido no código.
+   -------------------------------------------------------------------------- */
+.poem-frame {
+  /* stretch, e não center: um elemento vazio centrado tem altura zero, e uma
+     moldura de altura zero faz o compositor de poemas concluir que não cabe
+     um único verso — compõe tudo no corpo mínimo e empilha-o sobre o centro.
+     Com stretch, a moldura ocupa a linha inteira da grelha e passa a dizer a
+     verdade sobre o espaço disponível. */
+  align-self: stretch;
+  justify-self: center;
+  width: min(54rem, 100% - 2 * var(--gutter));
+  /* Folga em cima e em baixo para o poema não encostar ao nome do poeta nem
+     à assinatura do rodapé. Margem e não enchimento: getBoundingClientRect
+     devolve a caixa de bordo, que inclui o enchimento mas não a margem — com
+     padding, o JavaScript voltaria a medir o espaço todo e a folga era
+     decorativa. */
+  margin-block: var(--space-lg);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* -----------------------------------------------------------------------------
+   Telemóvel e ecrãs baixos.
+   -------------------------------------------------------------------------- */
+@media (max-width: 48rem) {
+  .centre {
+    gap: var(--space-lg);
+    translate: 0 -2vh;
+  }
+
+  .poet {
+    width: min(22rem, 86vw);
+    gap: var(--space-sm);
+  }
+
+  .poem-frame {
+    margin-block: var(--space-md);
+  }
+
+  .footnote {
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+/* Ecrãs muito baixos (portátil pequeno, telemóvel deitado): o bloco central
+   encosta ao topo em vez de ficar espremido. */
+@media (max-height: 34rem) {
+  .centre {
+    gap: var(--space-md);
+    translate: 0;
+  }
+}

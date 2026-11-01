@@ -1,0 +1,135 @@
+/* =============================================================================
+   main.css — Composição da página e máquina de estados visual.
+   -----------------------------------------------------------------------------
+   Carregada em último lugar, com uma única responsabilidade: dizer o que se vê
+   em cada etapa da narrativa. Os outros ficheiros descrevem peças; este
+   descreve a encenação.
+
+   Os ficheiros de estilo são ligados um a um no index.html em vez de serem
+   encadeados com @import. @import serializa os pedidos — o browser só descobre
+   o segundo ficheiro depois de descarregar o primeiro — e atrasa a primeira
+   pintura; vários <link> descarregam em paralelo. A modularidade mantém-se, o
+   custo desaparece.
+
+   O JavaScript nunca decide aparências. A única coisa que escreve é
+   document.body.dataset.stage, com um de quatro valores:
+
+     intro  — saudação
+     home   — identidade do projeto e escolha de poeta
+     poet   — rosto composto, nome e lista de poemas
+     poem   — poema escrito em partículas
+
+   Tudo o resto é consequência, aqui declarada.
+   ========================================================================== */
+
+/* -----------------------------------------------------------------------------
+   Estado visível — definido uma única vez, para todos os painéis.
+   A lista de seletores é a tradução literal da tabela de estados acima.
+   -------------------------------------------------------------------------- */
+body[data-stage="home"] .centre,
+body[data-stage="poet"] .poet,
+body[data-stage="poem"] .poet,
+body[data-stage="poem"] .footnote {
+  opacity: var(--o-full);
+  visibility: visible;
+  translate: 0 0;
+  transition:
+    opacity var(--dur-slow) var(--ease-enter),
+    translate var(--dur-slow) var(--ease-enter),
+    visibility 0s linear 0s;
+}
+
+/* -----------------------------------------------------------------------------
+   Entradas escalonadas.
+   Ao escolher um poeta, o painel da esquerda não deve chegar ao mesmo tempo
+   que as partículas começam a viajar: espera que o rosto comece a ganhar
+   forma. O atraso é a duração calma.
+   -------------------------------------------------------------------------- */
+body[data-stage="poet"] .poet,
+body[data-stage="poem"] .poet {
+  transition-delay: var(--dur-calm);
+}
+
+body[data-stage="poem"] .footnote {
+  transition-delay: var(--dur-slow);
+}
+
+/* -----------------------------------------------------------------------------
+   Durante o poema a nota biográfica recolhe e o nome encolhe, para que a
+   atenção fique na grelha central. O painel não se desloca: mover texto
+   enquanto três mil letras atravessam o ecrã seria ruído.
+   -------------------------------------------------------------------------- */
+body[data-stage="poem"] .poet__note {
+  opacity: var(--o-none);
+  transition: opacity var(--dur-calm) var(--ease-exit);
+}
+
+body[data-stage="poem"] .poet__name {
+  font-size: var(--size-md);
+  transition: font-size var(--dur-slow) var(--ease-standard);
+}
+
+/* -----------------------------------------------------------------------------
+   Auréola de papel, durante o poema.
+
+   Num ecrã sem largura para afastar a grelha do poema do painel — e um poema
+   de quarenta versos em duas colunas precisa de quase tudo o que há — os dois
+   textos sobrepõem-se e nenhum se lê.
+
+   A primeira tentativa foi um véu: um retângulo de papel por trás do painel,
+   a desvanecer para a direita. Resolve a legibilidade e cria um problema
+   pior — tapa o princípio de cada verso da primeira coluna, e um poema com
+   as primeiras letras comidas não é um poema.
+
+   A auréola faz o contrário: em vez de pôr papel por trás de uma ÁREA, põe-no
+   por trás de cada LETRA do painel. O verso passa por baixo inteiro, só
+   ligeiramente apagado onde cruza um nome, e as duas camadas lêem-se as duas.
+   Que é, afinal, o que este site é: camadas de tipografia a atravessarem-se.
+
+   Houve também uma versão que, em ecrãs largos, afastava a grelha do poema
+   para a direita do painel. Resolvia a sobreposição e trocava-a por outra
+   coisa pior: um poema encostado ao terço direito do ecrã, com meia página
+   vazia à esquerda. A grelha é centrada, como diz o caderno de encargos, e é
+   a auréola que trata do cruzamento.
+   -------------------------------------------------------------------------- */
+body[data-stage="poet"] .poet,
+body[data-stage="poem"] .poet {
+  text-shadow:
+    0 0 4px var(--paper),
+    0 0 9px var(--paper),
+    0 0 14px var(--paper);
+}
+
+/* O painel encolhe enquanto há um poema aberto: os títulos são curtos e podem
+   passar a duas linhas sem prejuízo, e cada píxel que devolve é um píxel de
+   verso que deixa de ser atravessado. */
+body[data-stage="poem"] .poet {
+  --poet-panel-width: min(17rem, 60vw);
+}
+
+/* -----------------------------------------------------------------------------
+   Oferta de movimento.
+   Quando o sistema pede menos movimento, a página fica parada e aparece isto:
+   um convite explícito, não um aviso. Posicionado em baixo ao centro, onde
+   não tapa nem o título nem o painel do poeta.
+   -------------------------------------------------------------------------- */
+.motion-offer {
+  position: fixed;
+  left: 50%;
+  bottom: var(--gutter-bottom);
+  z-index: var(--z-nav);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: min(30rem, calc(100% - 2 * var(--gutter)));
+  translate: -50% 0;
+  text-align: center;
+}
+
+.motion-offer__text {
+  font-size: var(--size-xs);
+  font-style: italic;
+  line-height: var(--leading-base);
+  color: var(--accent-2);
+}
