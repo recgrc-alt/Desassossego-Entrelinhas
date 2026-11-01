@@ -51,9 +51,40 @@ const MIN_BUDGET_AREA = 640 * 480;
 /** Nunca menos do que isto, ou um rosto deixa de se ler. */
 const MIN_BUDGET = 1100;
 
-/** Tetos medidos: o desenho por atlas aguenta muito mais em desktop do que
- *  no Safari do iPhone, onde cada drawImage custa quatro a cinco vezes mais. */
-const MAX_BUDGET_DESKTOP = 16000;
+/**
+ * Tetos do número de letras. É o número que custa, e não o tamanho delas.
+ *
+ * ONDE SE GASTA O FOTOGRAMA, MEDIDO E NÃO SUPOSTO
+ * Cada letra no ecrã é uma chamada a drawImage, e o que pesa é a CHAMADA,
+ * não a tinta. Dois ensaios no mesmo fotograma, a mudar uma variável de cada
+ * vez:
+ *
+ *   mesma tinta, metade das chamadas  →  ×0.70  (30% mais rápido)
+ *   mesmas chamadas, o dobro da tinta →  ×1.13  (13% mais lento)
+ *
+ * Limpar o canvas inteiro, que é a parte que cresce com o ecrã, custa 1.8 ms
+ * a 2880×1800 contra 0.4 ms a 1920×1080: existe, e é desprezável ao pé dos
+ * sessenta e tal milissegundos das dezasseis mil chamadas.
+ *
+ * PORQUE É QUE ISTO PERMITE BAIXAR O TETO SEM PERDER NADA
+ * Para um dado aspeto, a tinta de um desenho depende só da área que ele
+ * ocupa e da sobreposição das letras — não do número delas. Espalhadas N
+ * letras por uma área A, o espaçamento vai com √(A/N); mantendo a razão
+ * entre espaçamento e corpo, o corpo tem de ir com 1/√N, e a tinta total,
+ * N × corpo², fica constante. O número de letras escolhe apenas o GRÃO.
+ *
+ * Logo: metade das letras com o corpo √2 vezes maior é o mesmo desenho, com
+ * grão mais grosso, por 30% menos tempo. É disso que vive este teto. O corpo
+ * cresce sozinho — ver glyphScale, logo abaixo — e não há nada a afinar à
+ * mão quando este número muda.
+ *
+ * As 11 000 são o compromisso: a partir dos 1920×1080 poupam quase um terço
+ * do fotograma e engrossam o corpo 24%, de 16 para 19.9 px no plano do meio.
+ * Abaixo de 1440×900 nem chegam a pegar, e aí nada mudou. Baixar mais é
+ * legítimo e é só mexer aqui; o desenho acompanha, mas o grão engrossa e a
+ * certa altura deixam de ser milhares de letras para serem centenas.
+ */
+const MAX_BUDGET_DESKTOP = 11000;
 const MAX_BUDGET_MOBILE = 3600;
 
 /**

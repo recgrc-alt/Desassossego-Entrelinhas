@@ -137,13 +137,37 @@ analisados. Por isso escolher um poeta é instantâneo — a nuvem de pontos foi
 calculada enquanto a palavra estava parada. A espera tem teto de seis
 segundos, para que um CDN em baixo não transforme a entrada na página final.
 
+**O que custa é o NÚMERO de letras, não o tamanho delas.**
+Cada letra no ecrã é uma chamada a `drawImage`, e o que pesa é a chamada. Dois
+ensaios no mesmo fotograma, a mudar uma variável de cada vez: com a mesma
+tinta e metade das chamadas, **30% mais rápido**; com as mesmas chamadas e o
+dobro da tinta, 13% mais lento. Limpar o canvas inteiro — a parte que cresce
+com o ecrã — custa 1,8 ms a 2880×1800 contra 0,4 ms a 1920×1080: existe, e é
+desprezável ao pé do resto.
+
+Isto tem uma consequência que parece contraintuitiva e não é. Para um dado
+aspeto, a tinta de um desenho depende só da área que ele ocupa e da
+sobreposição das letras — **não do número delas**. Espalhadas N letras por uma
+área A, o espaçamento vai com √(A/N); mantendo a razão entre espaçamento e
+corpo, o corpo vai com 1/√N, e a tinta total, N × corpo², fica constante. O
+número de letras escolhe apenas o GRÃO.
+
+Logo, metade das letras com o corpo √2 vezes maior é o mesmo desenho por 30%
+menos tempo. Medido no sítio: a 2880×1800, baixar o teto de 16 000 para 11 000
+letras passou de 15 812 para 10 863 chamadas de desenho e manteve a tinta em
+31 megapíxeis — 31,44 contra 31,04. O desenho é o mesmo; o grão é mais grosso.
+
+O teto vive em `MAX_BUDGET_DESKTOP`, em `scripts/core/env.js`, e é o botão da
+relação entre grão e fluidez. Baixá-lo é seguro: o corpo cresce sozinho para
+compensar e não há mais nada a afinar.
+
 **Em ecrãs grandes, as letras crescem — e o campo rareia.**
 O número de partículas tem teto, por causa do fotograma: acima de uns
-1920×1080 fica preso nas 16 000. O rosto, esse, continua a crescer com o ecrã,
+1600×1000 fica preso nas 11 000. O rosto, esse, continua a crescer com o ecrã,
 e as mesmas letras espalhadas por mais área deixam de se sobrepor — medido, o
-espaçamento sobe de 3,8 px a 1920×1080 para 6,5 px a 2880×1800. Como é a
-sobreposição que faz um rosto ler-se como meio-tom, o retrato desaparecia num
-monitor grande.
+espaçamento sobe de 3,8 px a 1920×1080 para 6,5 px a 2880×1800 com o teto
+antigo. Como é a sobreposição que faz um rosto ler-se como meio-tom, o retrato
+desaparecia num monitor grande.
 
 A correção não é mais letras, que não cabem no fotograma: é letras do tamanho
 certo para a tela. Os corpos são multiplicados pela raiz quadrada da falta de
