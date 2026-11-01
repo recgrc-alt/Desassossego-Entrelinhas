@@ -57,6 +57,18 @@ const MAX_BUDGET_DESKTOP = 16000;
 const MAX_BUDGET_MOBILE = 3600;
 
 /**
+ * Até onde os corpos das letras podem engrossar para compensar o teto.
+ *
+ * Dois limites verdadeiros se encontram aqui. Cada plano do atlas é um canvas
+ * cuja área cresce com o QUADRADO do corpo, e o Safari do iPhone descarta
+ * canvas em silêncio quando se lhe passa do orçamento de memória — a 2.2 o
+ * plano mais pesado ainda cabe com folga. E, acima disto, as letras deixam de
+ * se ler como letras: um rosto feito de caracteres de sessenta píxeis é uma
+ * colagem, não é tipografia.
+ */
+const MAX_GLYPH_SCALE = 2.2;
+
+/**
  * @typedef {object} LayerToken
  * @property {number} size Corpo do glifo em píxeis de CSS.
  * @property {number} opacity Opacidade do plano, em [0, 1].
@@ -71,6 +83,8 @@ const MAX_BUDGET_MOBILE = 3600;
  * @property {boolean} canHover
  * @property {boolean} saveData
  * @property {number} particleBudget
+ * @property {number} glyphScale Multiplicador dos corpos, já aplicado aos
+ *   planos, ao plano de leitura e ao das palavras. Exposto para diagnóstico.
  * @property {LayerToken[]} layers Os quatro planos de profundidade.
  * @property {{ min: number, max: number, comfort: number, lineHeight: number, tracking: number, opacity: number, gutter: number }} reading
  * @property {{ size: number, opacity: number }} word
@@ -111,9 +125,10 @@ function readDuration(style, name, fallback) {
 /**
  * Lê os quatro planos de profundidade declarados no CSS.
  * @param {CSSStyleDeclaration} style
+ * @param {number} scale Multiplicador dos corpos. Ver glyphScale.
  * @returns {LayerToken[]}
  */
-function readLayers(style) {
+function readLayers(style, scale) {
   const defaults = [
     { size: 9, opacity: 0.17, parallax: 0.56 },
     { size: 12, opacity: 0.42, parallax: 0.75 },
@@ -124,7 +139,7 @@ function readLayers(style) {
   return defaults.map((fallback, index) => {
     const n = index + 1;
     return {
-      size: readNumber(style, `--layer-${n}-size`, fallback.size),
+      size: readNumber(style, `--layer-${n}-size`, fallback.size) * scale,
       opacity: readNumber(style, `--layer-${n}-opacity`, fallback.opacity),
       parallax: readNumber(style, `--layer-${n}-parallax`, fallback.parallax),
     };
@@ -166,11 +181,15 @@ function computeDpr(mobile) {
  * Isto é só o ponto de partida. O governador de qualidade (ver
  * scripts/states/director.js) mede a cadência real e ajusta.
  *
+ * Devolve as DUAS contas, e não só o resultado: o que a área pedia e o que o
+ * teto deixou. A diferença entre as duas é o que depois engrossa as letras
+ * (ver glyphScale), e perdê-la aqui obrigaria a refazer a conta noutro sítio.
+ *
  * @param {number} dpr
  * @param {boolean} reducedMotion
  * @param {boolean} mobile
  * @param {boolean} saveData
- * @returns {number}
+ * @returns {{ wanted: number, granted: number }}
  */
 function computeBudget(dpr, reducedMotion, mobile, saveData) {
   const area = Math.max(MIN_BUDGET_AREA, window.innerWidth * window.innerHeight);
@@ -184,15 +203,55 @@ function computeBudget(dpr, reducedMotion, mobile, saveData) {
   const motionFactor = reducedMotion ? 0.55 : 1;
   const dataFactor = saveData ? 0.6 : 1;
 
+  const wanted = scaled * dprPenalty * motionFactor * dataFactor;
   const ceiling = mobile ? MAX_BUDGET_MOBILE : MAX_BUDGET_DESKTOP;
-  return Math.round(clamp(scaled * dprPenalty * motionFactor * dataFactor, MIN_BUDGET, ceiling));
+
+  return { wanted, granted: Math.round(clamp(wanted, MIN_BUDGET, ceiling)) };
+}
+
+/**
+ * Quanto é preciso engrossar as letras para compensar as que o teto não
+ * deixou nascer.
+ *
+ * O PORQUÊ, QUE É O QUE INTERESSA
+ * O orçamento de partículas tem teto; o rosto não tem. Acima de mais ou menos
+ * 1920×1080 o número de letras congela e o rosto continua a crescer com o
+ * ecrã, por isso as mesmas letras espalham-se por cada vez mais área. Medido:
+ * a 1920×1080 o espaçamento entre letras do rosto é de 3.8 px, a 2880×1800 é
+ * de 6.5 px. Como os corpos estavam fixos entre 9 e 22 px, a certa altura as
+ * letras DEIXAM DE SE SOBREPOR — e é a sobreposição que faz um rosto ler-se
+ * como meio-tom. Sem ela fica um fantasma.
+ *
+ * A correção não é mais letras: 13 mil letras chegam e sobram, e 42 mil não
+ * cabem num fotograma. A correção é letras do tamanho certo para a tela em
+ * que estão desenhadas.
+ *
+ * A RAIZ QUADRADA NÃO É ARBITRÁRIA
+ * Espalhados N pontos por uma área A, a distância típica entre vizinhos vai
+ * com √(A/N). Se A cresce e N fica preso, o espaçamento cresce com √(pedido
+ * ÷ concedido) — logo é exatamente esse o fator que repõe a sobreposição que
+ * havia antes, e com ela o peso visual do desenho.
+ *
+ * Corrige-se sozinho nos dois sentidos: num ecrã onde o teto não chega a
+ * pegar, o fator é 1 e nada muda; se um dia o teto subir, o fator desce
+ * sozinho.
+ *
+ * @param {number} wanted Partículas que a área pedia.
+ * @param {number} granted Partículas que existem de facto.
+ * @returns {number} Multiplicador dos corpos, em [1, MAX_GLYPH_SCALE].
+ */
+function glyphScale(wanted, granted) {
+  // Numa janela pequena o chão do orçamento dá MAIS letras do que a área
+  // pedia. Aí não há nada a compensar, e encolher os corpos só estragaria.
+  if (granted >= wanted) return 1;
+  return Math.min(Math.sqrt(wanted / granted), MAX_GLYPH_SCALE);
 }
 
 /**
  * Fotografa o ambiente atual.
  * @returns {Environment}
  */
-export function readEnvironment() {
+export function readEnvironment({ particleBudget } = {}) {
   const style = window.getComputedStyle(document.documentElement);
 
   const mobile = isTouchDevice();
@@ -207,25 +266,39 @@ export function readEnvironment() {
   const saveData = Boolean(navigator.connection && navigator.connection.saveData)
     || window.matchMedia('(prefers-reduced-data: reduce)').matches;
 
+  // O orçamento em vigor pode vir de fora. Os arrays tipados do enxame são
+  // reservados uma vez no arranque e nunca mais mudam de tamanho, por isso
+  // quem redimensiona a janela tem de dizer com quantas partículas ficou —
+  // senão a compensação dos corpos seria calculada contra um orçamento que
+  // não existe, e numa janela que cresceu muito ficaria curta.
+  const orcamento = computeBudget(dpr, reducedMotion, mobile, saveData);
+  const budget = particleBudget ?? orcamento.granted;
+  const scale = glyphScale(orcamento.wanted, budget);
+
   return {
     dpr,
     reducedMotion,
     coarsePointer,
     canHover,
     saveData,
-    particleBudget: computeBudget(dpr, reducedMotion, mobile, saveData),
-    layers: readLayers(style),
+    particleBudget: budget,
+    glyphScale: scale,
+    layers: readLayers(style, scale),
     reading: {
-      min: readNumber(style, '--reading-min-size', 14),
-      max: readNumber(style, '--reading-max-size', 21),
-      comfort: readNumber(style, '--reading-comfort', 16),
+      // Os três corpos do plano de leitura escalam juntos, e têm de escalar
+      // juntos: `comfort` é o limiar que decide entre uma e duas colunas, e
+      // deixá-lo parado enquanto os outros crescem mudava a composição dos
+      // poemas em ecrãs grandes por um motivo que nada tem que ver com eles.
+      min: readNumber(style, '--reading-min-size', 14) * scale,
+      max: readNumber(style, '--reading-max-size', 21) * scale,
+      comfort: readNumber(style, '--reading-comfort', 16) * scale,
       lineHeight: readNumber(style, '--reading-line-height', 1.95),
       tracking: readNumber(style, '--reading-tracking', 0.015),
       opacity: readNumber(style, '--reading-opacity', 1),
       gutter: readNumber(style, '--reading-gutter', 3.2),
     },
     word: {
-      size: readNumber(style, '--word-size', 30),
+      size: readNumber(style, '--word-size', 30) * scale,
       opacity: readNumber(style, '--word-opacity', 1),
     },
     glyphColor: style.getPropertyValue('--glyph-color').trim() || '#0e0e0e',

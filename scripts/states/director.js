@@ -38,7 +38,7 @@ const STAGES = {
  * profundidade declarados no CSS, e é o único cujo corpo de letra muda em
  * tempo de execução, de poema para poema.
  */
-const READING_TIER = 4;
+export const READING_TIER = 4;
 
 /**
  * Plano das palavras que se formam no campo. Vem a seguir ao de leitura, e
@@ -46,7 +46,7 @@ const READING_TIER = 4;
  * uma palavra feita no corpo das letras à volta não se lê como palavra: lê-se
  * como as mesmas letras a mexer.
  */
-const WORD_TIER = 5;
+export const WORD_TIER = 5;
 
 /** Teto da espera pelo carregamento, em milissegundos. */
 const READY_TIMEOUT = 6000;
@@ -675,12 +675,30 @@ export class Director {
 
   /**
    * Quantas partículas ficam acesas no campo da página inicial.
+   *
+   * A densidade é por área, e divide-se pelo QUADRADO da escala dos corpos.
+   *
+   * O rosto e o campo têm problemas opostos, e é preciso não confundi-los. No
+   * rosto, o número de pontos está preso ao teto do orçamento enquanto a cara
+   * cresce com o ecrã: as letras afastam-se e engrossá-las é o que repõe o
+   * desenho. No campo não há teto nenhum — o número já acompanha a área, e a
+   * densidade já estava certa. Engrossar as letras aqui não corrige coisa
+   * nenhuma: acrescenta tinta a quem já tinha a dose certa, e um ecrã grande
+   * passava a abrir com uma parede de letras por trás do título. Visto e
+   * corrigido, não deduzido.
+   *
+   * O peso visual de um campo é o número de letras vezes a área de cada uma.
+   * Se o corpo cresce `s` vezes, a área cresce `s²`, e manter o peso obriga a
+   * dividir o número por `s²`. O resultado é o que se quer num ecrã maior:
+   * o mesmo desenho, com o grão à escala — menos letras, maiores.
+   *
    * @private
    * @returns {number}
    */
   fieldCount() {
     const area = this.system.width * this.system.height;
-    return Math.min(this.system.count, Math.round(area * FIELD_DENSITY));
+    const escala = this.env.glyphScale || 1;
+    return Math.min(this.system.count, Math.round((area * FIELD_DENSITY) / (escala * escala)));
   }
 
   /** Recua um passo: do poema para o rosto, do rosto para o campo. */

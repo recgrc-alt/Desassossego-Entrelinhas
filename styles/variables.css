@@ -82,18 +82,35 @@
   --weight-regular: 400;
 
   /* Escala fluida: clamp(min, preferido, max). O preferido usa vw para que o
-     texto respire em ecrãs grandes sem nunca rebentar em telemóvel. */
-  --size-xs:   clamp(0.72rem, 0.68rem + 0.18vw, 0.82rem);
-  --size-sm:   clamp(0.84rem, 0.79rem + 0.24vw, 0.98rem);
-  --size-base: clamp(1rem,    0.94rem + 0.3vw,  1.15rem);
-  --size-md:   clamp(1.18rem, 1.08rem + 0.5vw,  1.45rem);
-  --size-lg:   clamp(1.6rem,  1.32rem + 1.4vw,  2.6rem);
-  --size-xl:   clamp(2.2rem,  1.6rem + 3vw,     4.6rem);
+     texto respire em ecrãs grandes sem nunca rebentar em telemóvel.
+
+     OS TETOS ESTAVAM BAIXOS DE MAIS, E ISSO VIA-SE
+     Cada um destes limites era atingido entre os 1120 e os 1600 px de
+     largura. Acima disso o texto deixava de crescer: o título tinha o mesmo
+     corpo numa janela de 1600 e num monitor de 2880, e a página lia-se como
+     um cartão pequeno ao meio de muito branco. Não havia nada partido no
+     layout — havia tudo a parar a meio caminho.
+
+     Os declives são os mesmos de antes, de propósito: abaixo do antigo teto
+     não muda um único píxel, e o que muda é só o que estava congelado. Os
+     novos limites são atingidos aos 2560 px, que é onde faz sentido a
+     tipografia assentar — daí para cima um título continuaria a crescer sem
+     ninguém pedir, e um título de dois palmos não é melhor do que um de um. */
+  --size-xs:   clamp(0.72rem, 0.68rem + 0.18vw, 0.97rem);
+  --size-sm:   clamp(0.84rem, 0.79rem + 0.24vw, 1.17rem);
+  --size-base: clamp(1rem,    0.94rem + 0.3vw,  1.42rem);
+  --size-md:   clamp(1.18rem, 1.08rem + 0.5vw,  1.88rem);
+  --size-lg:   clamp(1.6rem,  1.32rem + 1.4vw,  3.56rem);
+  --size-xl:   clamp(2.2rem,  1.6rem + 3vw,     6.4rem);
 
   /* A saudação de entrada. Deliberadamente modesta: é a primeira coisa que se
      vê e não é o assunto da página. A versão anterior usava um corpo heróico
-     de até 6.4rem e lia-se como um cartaz. */
-  --intro-size: clamp(1.75rem, 1.2rem + 2.2vw, 3.1rem);
+     de até 6.4rem e lia-se como um cartaz.
+
+     O teto subiu de 3.1 para 4.72rem pela mesma razão que os outros, mas com
+     a modéstia mantida: aos 2560 px dá 75 px, longe dos 102 px do cartaz que
+     foi recusado, e continua a ser a metade mais pequena do título. */
+  --intro-size: clamp(1.75rem, 1.2rem + 2.2vw, 4.72rem);
 
   --leading-tight: 1.1;
   --leading-snug:  1.3;
@@ -119,11 +136,17 @@
 
   /* Largura do painel do poeta. É um token porque duas peças precisam dela:
      o próprio painel e a moldura do poema, que em ecrãs largos se afasta
-     para lhe dar lugar. */
-  --poet-panel-width: min(26rem, 72vw);
+     para lhe dar lugar.
+
+     Cresce depois dos 1970 px porque a tipografia cresce: um nome composto a
+     57 px dentro de uma caixa de 416 px partia-se em três linhas, e "Sophia
+     de Mello Breyner Andresen" em três linhas é um acidente, não um painel.
+     Abaixo desse ponto o valor é exatamente o de antes, e em telemóvel manda
+     a percentagem, como mandava. */
+  --poet-panel-width: min(clamp(26rem, 10rem + 13vw, 34rem), 72vw);
 
   /* Margem viva da página. Respeita o notch do iPhone via env(). */
-  --gutter: clamp(1.25rem, 1rem + 3vw, 5rem);
+  --gutter: clamp(1.25rem, 1rem + 3vw, 5.8rem);
   --gutter-left: calc(var(--gutter) + env(safe-area-inset-left, 0px));
   --gutter-right: calc(var(--gutter) + env(safe-area-inset-right, 0px));
   --gutter-top: calc(var(--gutter) + env(safe-area-inset-top, 0px));

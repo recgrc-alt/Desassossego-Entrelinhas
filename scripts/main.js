@@ -29,7 +29,7 @@ import { Renderer } from './particles/renderer.js';
 import { ParticleSystem } from './particles/system.js';
 import { alphabetInUse, indexById, readLibrary } from './data/library.js';
 import { clearImageCache } from './targets/image-sampler.js';
-import { Director } from './states/director.js';
+import { Director, WORD_TIER } from './states/director.js';
 import { Atmosphere } from './ui/atmosphere.js';
 import { Navigation } from './ui/nav.js';
 
@@ -369,12 +369,27 @@ class App {
     this.lastWidth = width;
     this.lastHeight = height;
 
-    const next = readEnvironment();
     // O orçamento de partículas NÃO é recalculado: os arrays tipados foram
     // reservados no arranque e mudá-los a meio obrigaria a realocar tudo. A
     // adaptação ao desempenho em curso é feita pelo governador de qualidade,
-    // que não precisa de realocar nada.
-    this.env = { ...next, particleBudget: this.env.particleBudget };
+    // que não precisa de realocar nada. Entregar o orçamento em vigor é o que
+    // permite ao ambiente medir a compensação dos corpos contra as partículas
+    // que EXISTEM, e não contra as que uma janela deste tamanho teria tido.
+    const next = readEnvironment({ particleBudget: this.env.particleBudget });
+    this.env = next;
+
+    // Os corpos das letras dependem da área da janela (ver glyphScale, em
+    // core/env.js), por isso mudam quando a janela muda. O atlas tem de ser
+    // rasterizado outra vez nesses corpos — se não for, o motor compõe os
+    // destinos com um corpo e o desenho sai com outro, e o resultado é um
+    // rosto fora de sítio sem erro nenhum na consola. buildTier só trabalha
+    // quando o corpo mudou mesmo, por isso arrastar uma janela sem cruzar
+    // nenhum limiar não custa nada.
+    next.layers.forEach((layer, tier) => this.atlas.buildTier(tier, layer.size));
+    this.atlas.buildTier(WORD_TIER, next.word.size);
+
+    // O plano de leitura não entra aqui: o corpo dele é escolhido poema a
+    // poema, e o recompose() lá em baixo trata disso.
 
     if (densityChanged || Math.abs(this.atlas.dpr - next.dpr) > 0.01) {
       this.atlas.dpr = next.dpr;

@@ -137,6 +137,35 @@ analisados. Por isso escolher um poeta é instantâneo — a nuvem de pontos foi
 calculada enquanto a palavra estava parada. A espera tem teto de seis
 segundos, para que um CDN em baixo não transforme a entrada na página final.
 
+**Em ecrãs grandes, as letras crescem — e o campo rareia.**
+O número de partículas tem teto, por causa do fotograma: acima de uns
+1920×1080 fica preso nas 16 000. O rosto, esse, continua a crescer com o ecrã,
+e as mesmas letras espalhadas por mais área deixam de se sobrepor — medido, o
+espaçamento sobe de 3,8 px a 1920×1080 para 6,5 px a 2880×1800. Como é a
+sobreposição que faz um rosto ler-se como meio-tom, o retrato desaparecia num
+monitor grande.
+
+A correção não é mais letras, que não cabem no fotograma: é letras do tamanho
+certo para a tela. Os corpos são multiplicados pela raiz quadrada da falta de
+partículas (`glyphScale`, em `scripts/core/env.js`), que é exatamente o fator
+com que o espaçamento cresceu. Num ecrã onde o teto não pega, o fator é 1 e
+nada muda — verificado: a 1440×900 e em telemóvel não se altera um píxel.
+
+O campo da página inicial leva o tratamento inverso. Lá a densidade já
+acompanhava a área, por isso engrossar as letras só acrescentava tinta: o
+`fieldCount` divide por isso o número pelo quadrado da escala. O peso de um
+campo é o número de letras vezes a área de cada uma, e o que se quer num ecrã
+maior é o mesmo desenho com o grão à escala — menos letras, maiores.
+
+**A tipografia só para de crescer aos 2560 px.**
+Os `clamp()` em `styles/variables.css` esgotavam-se entre os 1120 e os 1600 px
+de largura: o título tinha o mesmo corpo numa janela de 1600 e num monitor de
+2880, e a página lia-se como um cartão pequeno ao meio de muito branco. Os
+declives são os mesmos de sempre — abaixo do antigo limite não muda nada —, só
+os tetos subiram. Com eles crescem também o painel do poeta e a moldura do
+poema, que de outro modo ficariam a apertar texto maior dentro de caixas do
+mesmo tamanho.
+
 **Os tokens mandam, incluindo no canvas.**
 As cores, os corpos de letra, as opacidades, as durações e os quatro planos de
 profundidade estão todos no `:root` de `styles/variables.css`. O motor lê-os
